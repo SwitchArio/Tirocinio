@@ -44,6 +44,9 @@ class Utils(ThreeDScene):
         axes.labels = axis_labels
         axes.add(axis_labels)
 
+        axes.shift(center - axes.c2p(0, 0, 0)) # centra il piano in center
+        axes.set_flat_stroke(False)
+        return axes
 
 def print_hi(name):
     # Use a breakpoint in the code line below to debug your script.
