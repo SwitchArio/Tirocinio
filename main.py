@@ -35,8 +35,14 @@ class Utils(ThreeDScene):
             axes.plane = plane
             axes.add(plane)
 
-# Press Maiusc+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+        x, y, z = axis_labels = VGroup(*map(Tex, "xyz"))
+        axis_labels.use_winding_fill(False)
+        x.next_to(axes.x_axis, RIGHT)
+        y.next_to(axes.y_axis, UP)
+        z.rotate(90 * DEGREES, RIGHT)
+        z.next_to(axes.z_axis, OUT)
+        axes.labels = axis_labels
+        axes.add(axis_labels)
 
 
 def print_hi(name):
