@@ -5,6 +5,21 @@ class Utils(ThreeDScene):
     def func(self, x, y):
         return np.exp(-x ** 2 - y ** 2)
 
+    def get_function_graph(
+            self,
+            axes,
+            func,
+            color=interpolate_color(BLUE_E, BLACK, 0.6),
+            opacity=1.0,
+            shading=(0.2, 0.2, 0.4),
+            resolution=(101, 101), # manim default
+    ) -> ParametricSurface:
+        graph = axes.get_graph(func, resolution=resolution)
+        graph.set_color(color)
+        graph.set_opacity(opacity)
+        graph.set_shading(*shading)
+        return graph
+
     def get_axes(
             self,
             x_range=(-3, 3),
@@ -59,6 +74,18 @@ class prova(Utils):
 
         # self.camera.frame.get_orientation()
         self.play(self.camera.frame.animate.set_euler_angles(phi=70*DEGREES, theta=-30*DEGREES))
+
+        graph = self.get_function_graph(axes, lambda x,y: np.sin(x**2 + y**2), opacity=0.7)
+        # self.play(ShowCreation(graph))
+
+        mesh = SurfaceMesh(graph, resolution=(30, 30), stroke_color=GREY_C)
+        mesh.set_stroke(WHITE, 0.5, opacity=0.25)
+        mesh.set_flat_stroke(False)
+
+        self.play(ShowCreation(graph))
+        self.play(ShowCreation(mesh))
+
+        # self.play( ReplacementTransform(graph, mesh), run_time=2 )
 
         # self.embed()
 
