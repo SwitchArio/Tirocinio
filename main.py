@@ -1,4 +1,39 @@
-# This is a sample Python script.
+
+from manimlib import *
+
+class Utils(ThreeDScene):
+    def func(self, x, y):
+        return np.exp(-x ** 2 - y ** 2)
+
+    def get_axes(
+            self,
+            x_range=(-3, 3),
+            y_range=(-3, 3),
+            z_range=(0, 1.5, 0.5),
+            width=8,
+            height=8,
+            depth=3,
+            center=0.5 * IN,
+            include_plane=False
+    ):
+        axes = ThreeDAxes(
+            x_range, y_range, z_range,
+            width=width, height=height, depth=depth
+        )
+        axes.set_stroke(GREY_C)
+        if include_plane:
+            plane = NumberPlane(
+                x_range, y_range,
+                width=width, height=height,
+                background_line_style=dict(
+                    stroke_color=GREY_C,
+                    stroke_width=1,
+                ),
+            )
+            plane.faded_lines.set_stroke(opacity=0.5)
+            plane.shift(0.01 * IN)
+            axes.plane = plane
+            axes.add(plane)
 
 # Press Maiusc+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
