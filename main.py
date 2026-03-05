@@ -48,12 +48,18 @@ class Utils(ThreeDScene):
         axes.set_flat_stroke(False)
         return axes
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+class prova(Utils):
+    def construct(self):
+        # axes = self.get_axes(include_plane=True)
+        axes = ThreeDAxes(
+            (-3, 3), (-3, 3), (0, 1.5, 0.5),
+            width=8, height=8, depth=3
+        )
+        self.play(ShowCreation(axes))
 
+        # self.camera.frame.get_orientation()
+        self.play(self.camera.frame.animate.set_euler_angles(phi=70*DEGREES, theta=-30*DEGREES))
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+        # self.embed()
+
 
