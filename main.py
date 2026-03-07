@@ -9,7 +9,8 @@ from vector3D import Vector3D
 
 class Utils(ThreeDScene):
     def func(self, x, y):
-        return 4 * np.exp(-(x ** 2 + y ** 2)) * np.sin(1 + 3 * x) * np.sin(y)
+        # return 4 * np.exp(-(x ** 2 + y ** 2)) * np.sin(1 + 3 * x) * np.sin(y)
+        return np.cos(x + y) / (1 + x ** 2)
 
     def der_par_x(self, f, x, y, h=0.0001):
         return (f(x + h, y) - f(x, y)) / h
@@ -94,7 +95,7 @@ class Utils(ThreeDScene):
 
         p = ParametricSurface(
             lambda u, v: axes.c2p(u, v, self.func(xc, yc) + dpx * (u - xc) + dpy * (v - yc)),
-            u_range=(xc - 2, xc + 2), v_range=(yc - 2, yc + 2),
+            u_range=(xc - 1, xc + 1), v_range=(yc - 1, yc + 1),
             resolution=(8, 8),
         )
         p.set_color(RED_C)
@@ -126,7 +127,7 @@ class MyScene(Utils):
             self.func(xp.get_value(), yp.get_value())
         ))
 
-        graph = self.get_function_graph(axes, self.func, opacity=0.7)
+        graph = self.get_function_graph(axes, self.func, opacity=0.1, depth_test=False)
         graph_mesh = self.get_mesh(graph)
         self.play(ShowCreation(graph))
         self.play(ShowCreation(graph_mesh))
@@ -137,8 +138,6 @@ class MyScene(Utils):
             run_time=3)
         self.play(frame.animate.scale(0.5))
 
-        # plane = self.get_tan_plane(axes, xp, yp)
-
         norm_vec = self.get_vector3D(
             point.get_center(),
             point.get_center()
@@ -146,99 +145,39 @@ class MyScene(Utils):
             - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP
             + OUT
         )
+
+        sf = 0.7  # scaling factor
+
         f_always(norm_vec.become, lambda: self.get_vector3D(
             point.get_center(),
             point.get_center()
-            - self.der_par_x(self.func, xp.get_value(), yp.get_value()) * RIGHT
-            - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP
-            + OUT
+            - self.der_par_x(self.func, xp.get_value(), yp.get_value()) * RIGHT * sf
+            - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP * sf
+            + OUT * sf
         ))
 
-        dpx = self.der_par_x(self.func, xp.get_value(), yp.get_value())
-        px_vec = self.get_vector3D(point.get_center(), point.get_center() - dpx * RIGHT)
-        f_always(px_vec.become, lambda: self.get_vector3D(
-             point.get_center(),
-             point.get_center() - self.der_par_x(self.func, xp.get_value(), yp.get_value()) * RIGHT
-        ))
+        # dpx = self.der_par_x(self.func, xp.get_value(), yp.get_value())
+        # px_vec = self.get_vector3D(point.get_center(), point.get_center() - dpx * RIGHT)
+        # f_always(px_vec.become, lambda: self.get_vector3D(
+        #      point.get_center(),
+        #      point.get_center() - self.der_par_x(self.func, xp.get_value(), yp.get_value()) * RIGHT
+        # ))
 
-        dpy = self.der_par_y(self.func, xp.get_value(), yp.get_value())
-        py_vec = self.get_vector3D(point.get_center(), point.get_center() - dpy * UP)
-        f_always(py_vec.become, lambda: self.get_vector3D(
-            point.get_center(),
-            point.get_center() - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP
-        ))
+        # dpy = self.der_par_y(self.func, xp.get_value(), yp.get_value())
+        # py_vec = self.get_vector3D(point.get_center(), point.get_center() - dpy * UP)
+        # f_always(py_vec.become, lambda: self.get_vector3D(
+        #     point.get_center(),
+        #     point.get_center() - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP
+        # ))
 
-        self.add(norm_vec, px_vec, py_vec)
+        self.add(norm_vec)
+        # self.add(px_vec, py_vec)
 
         self.play(xp.animate.set_value(1.5), yp.animate.set_value(1))
         self.play(xp.animate.set_value(-0.55), yp.animate.set_value(-0.3), run_time=3)
         self.play(xp.animate.set_value(1), yp.animate.set_value(-0.5), run_time=3)
 
-        # self.embed()
-
-
-class prova(Utils):
-    def construct(self):
-        axes = self.get_axes(include_plane=True)
-        self.play(ShowCreation(axes))
-
-        # self.camera.frame.get_orientation()
-        # self.play(self.camera.frame.animate.set_euler_angles(phi=0 * DEGREES, theta=-0 * DEGREES))
-
-        graph = self.get_function_graph(axes, self.func, opacity=0.7)
-
-        point = (1.0, -0.5)
-        xp, yp = point
-        tan_point = Sphere(
-            radius=0.04, color=RED_E, opacity=1,
-        ).move_to(
-            axes.c2p(xp, yp, self.func(xp, yp))
-        )
-
-        # self.camera.light_source_position = [-10,10,10]
-
-        def point_updater(mob):
-            x, y, *_ = axes.point_to_coords(mob.get_center())
-            mob.move_to(axes.c2p(x, y, self.func(x, y)))
-
-        tan_point.add_updater(point_updater)
-
-        def get_tan_mesh(tan: ParametricSurface) -> SurfaceMesh:
-            mesh = SurfaceMesh(tan_plane)
-            mesh.set_stroke(WHITE, 0.5, opacity=0.25)
-            mesh.set_flat_stroke(False)
-            return mesh
-
-        def update_plane(mob: Mobject):
-            x, y, *_ = axes.point_to_coords(tan_point.get_center())
-            new_tan_plane = self.get_tan_plane(axes, x, y)
-            mob.become(new_tan_plane)
-
-        self.play(ShowCreation(graph))
-
-        mesh = SurfaceMesh(graph, resolution=(30, 30), stroke_color=GREY_C)
-        mesh.set_stroke(WHITE, 0.5, opacity=0.25)
-        mesh.set_flat_stroke(False)
-        self.play(ShowCreation(mesh))
-
-        self.play(
-            self.camera.frame.animate.set_euler_angles(theta=113.4 * DEGREES, phi=66.6 * DEGREES).move_to(tan_point),
-            run_time=3)
-        self.play(self.camera.frame.animate.scale(0.5))
-
-        self.play(ShowCreation(tan_point))
-        self.wait()
-
-        tan_plane = self.get_tan_plane(axes, xp, yp)
-        mesh_tan = get_tan_mesh(tan_plane)
-
-        self.play(ShowCreation(tan_plane))
-        tan_plane.add_updater(update_plane)
-        self.play(ShowCreation(mesh_tan))
-        mesh_tan.add_updater(lambda mob: mob.become(get_tan_mesh(tan_plane)))
-
-        self.play(tan_point.animate.shift(UP * 0.5))
-        self.wait(0.5)
-        self.play(tan_point.animate.shift(DOWN * 0.5))
+        plane = self.get_tan_plane(axes, xp.get_value(), yp.get_value())
+        self.play(ShowCreation(plane))
 
         # self.embed()
