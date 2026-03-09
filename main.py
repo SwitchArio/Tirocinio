@@ -1,6 +1,9 @@
 import sys
 import os
 
+import numpy as np
+from scipy.special import lmbda
+
 sys.path.append(os.path.dirname(__file__))
 
 from manimlib import *
@@ -8,7 +11,8 @@ from vector3D import Vector3D
 
 
 class Utils(ThreeDScene):
-    def func(self, x, y):
+    @staticmethod
+    def func(x : float, y : float) -> float:
         # return 4 * np.exp(-(x ** 2 + y ** 2)) * np.sin(1 + 3 * x) * np.sin(y)
         return np.cos(x + y) / (1 + x ** 2)
 
@@ -110,6 +114,37 @@ class Utils(ThreeDScene):
         mesh.set_flat_stroke(False)
         return mesh
 
+    def get_tan_curve(self, axes, p, t_vec, f=func, width=13, t_range=(-2,2, 0.1)) -> ParametricCurve:
+        """Returns the tangent curve.
+
+        Parameters
+        ----------
+        axes
+            ThreeDAxes
+        p
+            (x,y,z) tuple, the point's surface the curve has to be tangent in
+        t_vec
+            the tangent vector in p
+        f
+            function defining the surface
+        width
+            stroke width
+        t_range
+            t range of the tangent curve
+
+        Returns
+        -------
+        curve
+            ParametricCurve
+
+        """
+
+        x,y,_ = p
+        tx, ty, _ = t_vec
+        curve = ParametricCurve(lambda t: axes.c2p(x+ t*tx, y + t*ty, f(x+ t*tx, y + t*ty)), t_range)
+        curve.set_stroke(width=width, opacity=1, color=WHITE)
+        return curve
+
 
 class MyScene(Utils):
     def construct(self):
@@ -127,27 +162,38 @@ class MyScene(Utils):
             self.func(xp.get_value(), yp.get_value())
         ))
 
-        graph = self.get_function_graph(axes, self.func, opacity=0.1, depth_test=False)
+        graph = self.get_function_graph(axes, self.func, opacity=0.5)
         graph_mesh = self.get_mesh(graph)
+
+        sf = 1  # scaling factor
+
+        norm_vec = self.get_vector3D( point.get_center(),
+            point.get_center()
+            - self.der_par_x(self.func, xp.get_value(), yp.get_value()) * RIGHT * sf
+            - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP * sf
+            + OUT * sf
+        )
+
+        plane = self.get_tan_plane(axes, xp.get_value(), yp.get_value())
+        mesh_plane = self.get_mesh(plane)
+
+
+
+
+        # SCENA 1
         self.play(ShowCreation(graph))
         self.play(ShowCreation(graph_mesh))
         self.play(ShowCreation(point))
 
-        self.play(
-            frame.animate.set_euler_angles(theta=113.4 * DEGREES, phi=66.6 * DEGREES).move_to(point),
-            run_time=3)
-        self.play(frame.animate.scale(0.5))
+        # self.play(frame.animate.shift(UP*1.2).scale(1.2).set_euler_angles(theta=48*DEGREES, phi=64.5*DEGREES), run_time=3)
+        self.play(frame.animate.shift(UP*1.2).scale(1.2).set_euler_angles(theta=48*DEGREES, phi=64.5*DEGREES), run_time=3)
 
-        norm_vec = self.get_vector3D(
-            point.get_center(),
-            point.get_center()
-            - self.der_par_x(self.func, xp.get_value(), yp.get_value()) * RIGHT
-            - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP
-            + OUT
-        )
+        self.play(ShowCreation(norm_vec))
+        self.play(*map(ShowCreation, [mesh_plane, plane]))
 
-        sf = 0.7  # scaling factor
-
+        # adding updaters to norm_vec and plane
+        plane.add_updater(lambda m: m.become(self.get_tan_plane(axes, xp.get_value(), yp.get_value())))
+        mesh_plane.add_updater(lambda m: m.become(self.get_mesh(plane)))
         f_always(norm_vec.become, lambda: self.get_vector3D(
             point.get_center(),
             point.get_center()
@@ -156,28 +202,104 @@ class MyScene(Utils):
             + OUT * sf
         ))
 
-        # dpx = self.der_par_x(self.func, xp.get_value(), yp.get_value())
-        # px_vec = self.get_vector3D(point.get_center(), point.get_center() - dpx * RIGHT)
-        # f_always(px_vec.become, lambda: self.get_vector3D(
-        #      point.get_center(),
-        #      point.get_center() - self.der_par_x(self.func, xp.get_value(), yp.get_value()) * RIGHT
-        # ))
+        # todo: fare un paio di movimenti prima
+        self.play(xp.animate.set_value(0), yp.animate.set_value(-0.5), run_time=3)
+        self.play(frame.animate.move_to(point).scale(0.6).set_euler_angles(theta=50 * DEGREES, phi=85 * DEGREES))
 
-        # dpy = self.der_par_y(self.func, xp.get_value(), yp.get_value())
-        # py_vec = self.get_vector3D(point.get_center(), point.get_center() - dpy * UP)
-        # f_always(py_vec.become, lambda: self.get_vector3D(
-        #     point.get_center(),
-        #     point.get_center() - self.der_par_y(self.func, xp.get_value(), yp.get_value()) * UP
-        # ))
+        # FINE SCENA 1
 
-        self.add(norm_vec)
-        # self.add(px_vec, py_vec)
+        # PREPARAZIONE SCENA 2
 
-        self.play(xp.animate.set_value(1.5), yp.animate.set_value(1))
-        self.play(xp.animate.set_value(-0.55), yp.animate.set_value(-0.3), run_time=3)
-        self.play(xp.animate.set_value(1), yp.animate.set_value(-0.5), run_time=3)
+        plane.save_state(), mesh_plane.save_state()
+        graph.save_state(), graph_mesh.save_state()
 
-        plane = self.get_tan_plane(axes, xp.get_value(), yp.get_value())
-        self.play(ShowCreation(plane))
+        vec = self.camera.get_location() - point.get_center() # vettore che congiunge camera e punto
+        t_vec = normalize(np.cross(norm_vec.direction, vec)) # vettore tangente alla curva
 
-        # self.embed()
+
+        x, y = xp.get_value(), yp.get_value()
+        dpx = self.der_par_x(self.func, x, y)
+        dpy = self.der_par_y(self.func, x, y)
+
+        g = lambda u, v: self.func(x, y) + dpx * (u - x) + dpy * (v - y)
+
+        d_range = (-2,2, 0.1)
+        tan_curve = self.get_tan_curve(axes, (x, y, 1), t_vec, t_range=d_range, width=10)
+        plane_curve = self.get_tan_curve(axes, (x, y, 0), t_vec, t_range=d_range, width=5, f=g)
+
+        # p1, p2 sono i punti che si muovono rispettivamente sulla superficie e sul piano tangente
+        p1 = self.get_Dot3D(ORIGIN, axes, radius=0.08, color=BLUE).move_to(point)
+        p2 = self.get_Dot3D(ORIGIN, axes, radius=0.08, color=BLUE).move_to(point)
+        pair = Group(p1, p2)
+
+        alpha = ValueTracker(0)
+        f_always(p2.move_to, lambda : plane_curve.t_func(alpha.get_value()))
+        f_always(p1.move_to, lambda : tan_curve.t_func(alpha.get_value()))
+
+        # linea congiungente p1,p2
+        line = always_redraw(Line, p1.get_center(), p2.get_center(), color=BLUE, opacity=0.5)
+        deg = 180 * DEGREES - frame.get_euler_angles()[0] # theta = 50 DEGREES
+        brace = always_redraw(Brace3D, line, rotation = deg)
+
+        font_size = 40
+        text = always_redraw(
+            lambda : Tex("h = ", font_size=font_size)
+            .next_to(brace, RIGHT)
+            .rotate(90 * DEGREES, axis=RIGHT)
+            .rotate(50 * DEGREES, about_point=brace.get_center())
+        )
+        number = always_redraw(lambda:
+            DecimalNumber(line.get_length(), show_ellipsis=True, num_decimal_places=2, font_size=font_size)
+            .next_to(text, RIGHT)
+            .rotate(90 * DEGREES, axis=RIGHT)
+            .rotate(50 * DEGREES, about_point=text.get_center())
+        )
+
+        # INIZIO SCENA 2
+
+        self.play(*map(ShowCreation, [tan_curve, plane_curve]), run_time=2)
+        # self.play(*map(FadeOut, [plane, mesh_plane, graph, graph_mesh]))
+        self.play(*map(FadeOut, [plane, mesh_plane]))
+        self.play(*map(ShowCreation, [p1, p2, line, brace]))
+        self.play(*map(ShowCreation, [text, number]))
+
+        self.play(alpha.animate.set_value(1.8), run_time=2)
+        self.play(alpha.animate.set_value(0.5), run_time=1.5)
+        self.play(alpha.animate.set_value(1.2), run_time=1)
+
+class Brace3D(Brace):
+    """
+    A 3D-oriented Brace object.
+
+    This class extends the standard 2D Brace by projecting it onto a
+    3D line segment and applying the necessary rotations to align it
+    with the segment's spatial orientation.
+
+    Parameters
+    ----------
+    line : Line
+        The target Line object the brace will be associated with.
+    rotation : float, optional
+        The roll angle (in radians) around the line's own axis. Default is 0.
+        To have the brace RIGHT to the line rotation = 180*DEGREES
+    **kwargs
+        Additional arguments passed to the Brace constructor (e.g., color, width).
+
+    """
+    def __init__(self, line, rotation=0, **kwargs):
+        length = line.get_length()
+        if length < 1e-9:
+            # Initialize with a dummy line and scale to 0 to remain invisible
+            super().__init__(Line(ORIGIN, RIGHT), direction=DOWN, **kwargs)
+            self.scale(0)
+            self.shift(line.get_start())
+            return
+
+        flatline = Line(ORIGIN, length*RIGHT)
+        super().__init__(flatline, direction=DOWN, **kwargs) # np.array([0., -1., 0.])
+        dline = line.get_end()-line.get_start()
+        self.rotate(angle=rotation, about_point=flatline.get_start(),axis=RIGHT)
+        # if np.linalg.norm(dline) > 0.0001:
+        self.rotate(-np.asin(dline[2]/np.linalg.norm(dline)), about_point=flatline.get_start(), axis=UP)
+        self.rotate(np.atan2(dline[1],dline[0]), about_point=flatline.get_start(), axis=OUT)
+        self.shift(line.get_start()-flatline.get_start())
