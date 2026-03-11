@@ -50,9 +50,6 @@ class Vector3D(Line3D):
 
         if self.length == 0:
             raise ValueError("Vector3D requires start and end to be different points.")
-        # if height >= self.length:
-        #     height = self.length/2
-        #     raise ValueError("Vector3D requires height < length.")
 
         line_end = self.end_point - self.direction * height
 
@@ -67,15 +64,13 @@ class Vector3D(Line3D):
 
         # axis is the cone axis
         self.cone = Cone(
-            # direction=self.direction,
             axis=self.direction,
             radius=radius,
             height=height,
             color=color,
             **kwargs,
         )
-        self.cone.shift( -self.direction * 0.4 + start + (line_end-start)) # + start
-        # self.cone.move_to()
+        self.cone.shift( -self.direction * 0.4 + start + (line_end-start))
         self.add(self.cone)
 
     def get_end(self) -> np.ndarray:
