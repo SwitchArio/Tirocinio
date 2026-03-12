@@ -1,6 +1,8 @@
 import sys
 import os
 
+from scipy.special import lmbda
+
 sys.path.append(os.path.dirname(__file__))
 
 from manimlib import *
@@ -13,10 +15,10 @@ class Utils(ThreeDScene):
         # return 4 * np.exp(-(x ** 2 + y ** 2)) * np.sin(1 + 3 * x) * np.sin(y)
         return np.cos(x + y) / (1 + x ** 2)
 
-    def der_par_x(self, f, x, y, h=0.0001):
+    def der_par_x(self, f, x, y, h=0.0000001):
         return (f(x + h, y) - f(x, y)) / h
 
-    def der_par_y(self, f, x, y, h=0.0001):
+    def der_par_y(self, f, x, y, h=0.0000001):
         return (f(x, y + h) - f(x, y)) / h
 
     def get_function_graph(
@@ -54,6 +56,7 @@ class Utils(ThreeDScene):
             x_range, y_range, z_range,
             width=width, height=height, depth=depth
         )
+        axes.plane = None
         axes.set_stroke(GREY_C)
         if include_plane:
             plane = NumberPlane(
@@ -65,7 +68,7 @@ class Utils(ThreeDScene):
                 ),
             )
             plane.faded_lines.set_stroke(opacity=0.5)
-            plane.shift(0.01 * IN)
+            # plane.shift(0.01 * IN)
             axes.plane = plane
             axes.add(plane)
 
@@ -149,6 +152,7 @@ class MyScene(Utils):
         frame = self.camera.frame
 
         axes = self.get_axes(center=ORIGIN, include_plane=True)
+
         self.play(ShowCreation(axes))
 
         xp = ValueTracker(1)
@@ -314,7 +318,7 @@ class MyScene(Utils):
 
         plane.suspend_updating(), mesh_plane.suspend_updating()
         self.play(
-            frame.animate.set_euler_angles(theta=0 * DEGREES, phi=0 * DEGREES),
+            frame.animate.set_euler_angles(theta=0 * DEGREES, phi=0 * DEGREES).scale(0.7),
             FadeOut(plane), FadeOut(mesh_plane),
             *map(FadeOut, [graph, graph_mesh]), run_time=2
         )
@@ -327,22 +331,86 @@ class MyScene(Utils):
         x0_label = Tex("x_0", font_size=font_size).next_to(x0, UP+0.35*RIGHT).shift(OUT*0.1)
         y0 = x0.copy()
 
-        line = DashedLine(x0.get_center(), y0.get_center() + UP+2*RIGHT, stroke_width=5, positive_space_ratio=0.6, color=RED)
+        shift_dir = (DOWN+2*RIGHT)
+        stroke_width = 5
+        positive_space_ratio = 0.6
+
+        line = DashedLine(
+            x0.get_center(), y0.get_center() + shift_dir,
+            stroke_width=stroke_width,
+            positive_space_ratio=positive_space_ratio,
+            color=RED
+        )
 
         self.play(ShowCreation(x0), Write(x0_label))
         self.add(y0)
-        self.play(y0.animate.shift(UP+2*RIGHT), ShowCreation(line), run_time=2)
+        self.play(y0.animate.shift(shift_dir), ShowCreation(line), run_time=2)
 
         y0_label = Tex("y_0", font_size=font_size).next_to(y0, 0.5*UP+RIGHT).shift(OUT*0.1)
         self.play(Write(y0_label))
 
         new_y0_label = Tex("x_0 + h", font_size=font_size).next_to(y0, 0.5*(0.5*UP+RIGHT)).shift(OUT*0.1)
         direction = rotate_vector(line.get_vector(), PI/2, axis=IN) # to rotate it clock-wise
-        brace = Brace(line, direction=direction)
+        brace = Brace(line, direction=direction).shift(OUT*0.1)
         brace_label = Tex("h", font_size=font_size).next_to(brace.get_center(), direction)
 
         self.play(TransformMatchingTex(y0_label, new_y0_label), FadeIn(brace), Write(brace_label))
 
+        scene_mobjects = [x0, x0_label, new_y0_label, line, brace, brace_label]
+        self.play(*map(FadeOut, scene_mobjects))
+        for m in [*scene_mobjects, y0_label]: m.remove()
+
+        self.play( frame.animate.restore(), *map(FadeIn, [graph, graph_mesh, plane, mesh_plane]), run_time=2)
+
+        x, y, *_ = axes.point_to_coords(y0.get_center())
+        y0_plane = self.get_Dot3D(ORIGIN, axes, radius=0.08, color=RED).move_to(plane.uv_func(x, y))
+        y0_graph = self.get_Dot3D(ORIGIN, axes, radius=0.08, color=RED).move_to(graph.uv_func(x, y))
+
+        line = DashedLine(
+            y0.get_center(), y0_plane.get_center(),
+            stroke_width=stroke_width,
+            positive_space_ratio=positive_space_ratio,
+            color=RED
+        ).set_z_index(-1)
+
+        #todo: da adattare alla frase e(h) = --> e(h) = f(x_0+h) --> e(h) = f(x_0+h) - ( ... )
+        self.play(*map(ShowCreation, [y0_plane, y0_graph, line]))
+
+        frame.save_state()
+
+        self.play(
+            frame.animate
+                 .move_to(plane.get_center())
+                 .set_euler_angles(gamma=-180*DEGREES, phi=95*DEGREES, theta=90*DEGREES)
+                 .scale(0.8),
+            plane.animate.shift(OUT*0.03)
+        )
+
+        self.wait(3)
+
+        plane.clear_updaters()
+        self.play(*map(FadeOut, [axes, graph, graph_mesh, y0_plane, y0_graph, line, y0, plane, mesh_plane]))
+
+        new_f = lambda u,v: -self.func(u,v) + self.func(0,0)
+        graph = self.get_function_graph(axes, new_f, opacity=0.5)
+        graph_mesh = self.get_mesh(graph).set_z_index(-1)
+        frame.set_euler_angles(gamma=0 * DEGREES, phi=80* DEGREES).move_to(ORIGIN)
+        self.play(*map(FadeIn, [axes, graph, graph_mesh]))
+        self.play(frame.animate.scale(1.5))
+
+        df_dx = lambda x,y: self.der_par_x(self.func, x, y)
+        df_dy = lambda x,y: self.der_par_y(self.func, x, y)
+
+        # derivate parziali
+        dxx = lambda x,y:  self.der_par_x(df_dx, x, y)
+        dxy = lambda x,y:  self.der_par_y(df_dx, x, y)
+        dyy = lambda x,y:  self.der_par_y(df_dy, x, y)
+
+        # heissiana
+        Hf = lambda x, y: [[dxx(x, y), dxy(x, y)], [dxy(x, y), dyy(x, y)]]
+
+
+        # self.embed()
 
 class Brace3D(Brace):
     """
