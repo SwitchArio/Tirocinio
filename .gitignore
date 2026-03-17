@@ -1,5 +1,6 @@
 /venv/
 /.venv/
+/videos/
 /.idea/
 __pycache__/
 *.pyc
