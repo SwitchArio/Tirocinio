@@ -320,7 +320,7 @@ class MyScene(Utils):
                   frame.animate.set_euler_angles(theta=30 * DEGREES, phi=80 * DEGREES).scale(1.5).move_to(ORIGIN + OUT),
                   run_time=2
                   )
-        self.remove(*to_remove, xp,yp)
+        self.remove(*to_remove, xp, yp)
         # manually removing after fade out
 
         # SCENA : zoom out --> "anzi per tutti i punti del piano!"
@@ -348,18 +348,18 @@ class MyScene(Utils):
 
         self.play(*map(FadeOut, points_and_lines))
 
-        self.play(FadeOut(text1)) # remove text1 ?
+        self.play(FadeOut(text1))  # remove text1 ?
         plane.clear_updaters(), mesh_plane.clear_updaters()
 
-        mobj_to_fade = [axes, plane, mesh_plane, graph, graph_mesh ]
+        mobj_to_fade = [axes, plane, mesh_plane, graph, graph_mesh]
         self.play(*map(FadeOut, mobj_to_fade))
 
         t1 = ["Dunque possiamo associare un certo", "errore"]
         t2 = "ad ogni punto in cui e' definito il piano tangente"
 
         text1, text2 = frase = Group(
-            TexText(*t1, font_size=FS,  t2c = { "errore" : RED } ),
-            TexText(t2, font_size=FS )
+            TexText(*t1, font_size=FS, t2c={"errore": RED}),
+            TexText(t2, font_size=FS)
         ).fix_in_frame().arrange(RIGHT, buff=SMALL_BUFF)
 
         self.play(Write(text1), run_time=2)
@@ -371,7 +371,7 @@ class MyScene(Utils):
 
         text3, text4 = frase2 = Group(
             TexText(t3, font_size=FS),
-            TexText(t4, font_size=FS, t2c={ "espressione analitica" : BLUE })
+            TexText(t4, font_size=FS, t2c={"espressione analitica": BLUE})
         ).fix_in_frame().arrange(DOWN)
 
         self.play(FadeOut(frase))
@@ -401,7 +401,7 @@ class MyScene(Utils):
 
         # tar_t = rf"$S=\{{(x^1,x^2,x^3)\in{R}^3:x^3=f(x^1,x^2)\}}$"
         tar_t = rf"$S:x^3=f(x^1,x^2)$"
-        target_text = TexText(tar_t, font_size=FS, t2c={"S": S_COLOR} ).fix_in_frame().to_edge(UP)
+        target_text = TexText(tar_t, font_size=FS, t2c={"S": S_COLOR}).fix_in_frame().to_edge(UP)
 
         self.play(Write(text1), run_time=2)
         self.wait()
@@ -414,11 +414,12 @@ class MyScene(Utils):
         text4 = target_text
 
         t1 = rf"Allora, preso $x_0\in{R}^2$, il piano tangente ad $S$ in $P=(x_0, f(x_0))\in{R}^3$"
-        t2 = ["e' la superficie definita al variare di $x$ come", r"$T:f(x_0)+\langle\nabla f(x_0),$", "$x$", r"$-x_0\rangle$"]
+        t2 = ["e' la superficie definita al variare di $x$ come", r"$T:f(x_0)+\langle\nabla f(x_0),$", "$x$",
+              r"$-x_0\rangle$"]
 
         # todo : colorare P secondo qualche criterio
         text1, text2 = frase = Group(
-            TexText(t1, font_size=FS, t2c={"$S$": S_COLOR, "P=(x_0, f(x_0))" : LIGHT_PINK}),
+            TexText(t1, font_size=FS, t2c={"$S$": S_COLOR, "P=(x_0, f(x_0))": LIGHT_PINK}),
             TexText(*t2, font_size=FS, t2c={"$x$": X_COLOR})
         ).fix_in_frame().arrange(DOWN, buff=SMALL_BUFF)
 
@@ -466,7 +467,7 @@ class MyScene(Utils):
         ).arrange(RIGHT, buff=SMALL_BUFF)
         text3, _ = frase2 = Group(
             TexText(t3, font_size=FS), frase
-        ).fix_in_frame().arrange(UP, buff=SMALL_BUFF).to_edge(LEFT).shift(2*UP)
+        ).fix_in_frame().arrange(UP, buff=SMALL_BUFF).to_edge(LEFT).shift(2 * UP)
 
         self.play(ShowCreation(x0), Write(x0_label), Write(text1))
         self.add(y0)
@@ -516,12 +517,12 @@ class MyScene(Utils):
 
         x, y, *_ = axes.point_to_coords(y0.get_center())
         y0_plane = self.get_Dot3D(ORIGIN, axes, radius=0.08, color=BLUE).move_to(plane.uv_func(x, y))
-        y0_plane_label = Tex("Q", font_size=FS,  stroke_width=1).next_to(y0_plane.get_center())
+        y0_plane_label = Tex("Q", font_size=FS, stroke_width=1).next_to(y0_plane.get_center())
         y0_plane_label.rotate(90 * DEGREES, axis=RIGHT).rotate(50 * DEGREES, about_point=y0_plane.get_center())
         y0_plane_label.set_z_index(-2)
 
         y0_graph = self.get_Dot3D(ORIGIN, axes, radius=0.08, color=GREEN).move_to(graph.uv_func(x, y))
-        y0_graph_label = Tex("P", font_size=FS,  stroke_width=1).next_to(y0_graph.get_center())
+        y0_graph_label = Tex("P", font_size=FS, stroke_width=1).next_to(y0_graph.get_center())
         y0_graph_label.rotate(90 * DEGREES, axis=RIGHT).rotate(50 * DEGREES, about_point=y0_graph.get_center())
         y0_graph_label.set_z_index(-2)
 
@@ -573,8 +574,8 @@ class MyScene(Utils):
         t1 = "Osservando la superficie dell'errore $e(h)$, non c'e' traccia di linearita'."
         t2 = "Questa e' quasi una parabola che emerge dal piano. "
 
-        t3 = "Eppure, la definizione che abbiamo usato sembra 'piatta'."
-        t4 = "Abbiamo solo sottratto l'approssimazione lineare dalla funzione originale"
+        t3 = "Eppure, la definizione che abbiamo usato"
+        t4 = "non sembra avere una natura quadratica."
         t5 = r"e(h) = f(x_0+h) - f(x_0) - \langle\nabla f(x_0),h\rangle"
         tar_t = [
             "e(h) = f(x_0+h) - f(x_0) - ",
@@ -585,42 +586,100 @@ class MyScene(Utils):
         text1, text2 = frase = Group(
             TexText(t1, font_size=FS),
             TexText(t2, font_size=FS)
-        ).fix_in_frame().arrange(DOWN, aligned_edge=DL).to_corner(DL).shift(UP)
+        ).fix_in_frame().arrange(DOWN, aligned_edge=DL).to_edge(DOWN).shift(UP)
 
         text3, text4 = frase2 = Group(
             TexText(t3, font_size=FS),
             TexText(t4, font_size=FS)
-        ).fix_in_frame().arrange(DOWN, aligned_edge=DL).move_to(frase.get_center())
+        ).fix_in_frame().arrange(RIGHT, buff=SMALL_BUFF).to_edge(DOWN).shift(UP * 1.3)
 
-
-        text5 = Tex(t5, font_size=FS).fix_in_frame().to_edge(DOWN, buff=SMALL_BUFF).shift(UP*0.5)
-        target_text = Tex(*tar_t, font_size=FS).fix_in_frame().move_to(text5)
+        text5 = Tex(t5, font_size=FS).fix_in_frame().to_edge(DOWN, buff=SMALL_BUFF).shift(UP * 0.5)
+        error_formula = Tex(*tar_t, font_size=FS).fix_in_frame().move_to(text5)
 
         self.wait()
         self.play(Write(text1), run_time=2)
         self.wait()
         self.play(Write(text2), run_time=2)
         self.wait(2.5)
-
-        self.play(FadeOut(frase), Write(text3), lag_ratio=0.5, run_time=2)
+        self.play(FadeOut(frase), run_time=2)
+        self.play(Write(text3), run_time=2)
+        self.play(Write(text4), run_time=2)
+        self.wait(0.5)
         self.play(Write(text5), run_time=2)
         self.wait()
-        self.play(Write(text4), run_time=2)
-        self.play(TransformMatchingTex(text5, target_text))
+        self.play(TransformMatchingTex(text5, error_formula))
         self.wait(4)
 
         self.play(*map(FadeOut, [frase2]))
         self.wait(3)
 
         plane.clear_updaters()
-        self.play(*map(FadeOut, [axes, graph, graph_mesh, y0_plane, y0_graph, line, y0, plane, mesh_plane]))
+        mobj_to_fade = [axes, graph, graph_mesh, y0_plane, y0_graph, line, y0, plane, mesh_plane]
+        self.play(*map(FadeOut, mobj_to_fade))
+
+        HEISSIAN_COLOR = YELLOW
+        LINEAR_TERM_COLOR = BLUE
+        FX0_COLOR = GREEN_D
+        FX0H_COLOR = GREEN_A
+
+        t2c = {
+            "f(x_0+h)": FX0H_COLOR,
+            "f(x_0)": FX0_COLOR,
+            r"\frac12 h^TH_fh": HEISSIAN_COLOR,
+            r"\langle\nabla f(x_0),h\rangle": LINEAR_TERM_COLOR,
+        }
+
+        t1 = "Da dove nasce questa curvatura?"
+        t2 = "Dobbiamo guardare oltre il primo ordine"
+
+        taylor_formula = [
+            r"f(x_0+h)",
+            r"f(x_0+h) = f(x_0) ",
+            r"f(x_0+h) = f(x_0) + \langle\nabla f(x_0),h\rangle ",
+            r"f(x_0+h) = f(x_0) + \langle\nabla f(x_0),h\rangle + \frac12 h^TH_fh",
+            r"f(x_0+h) = f(x_0) + \langle\nabla f(x_0),h\rangle + \frac12 h^TH_fh + o(|h|^2)"
+        ]
+
+        text1, text2 = frase = Group(
+            TexText(t1, font_size=FS),
+            TexText(t2, font_size=FS)
+        ).fix_in_frame().arrange(DOWN)
+
+        text_formula = [Tex(t, font_size=FS, t2c=t2c).fix_in_frame().move_to(frase.get_center()) for t in taylor_formula]
+
+        self.play(Write(text1), run_time=2)
+        self.wait(4)
+        self.play(Write(text2), run_time=2)
+        self.wait(2)
+        self.play(FadeOut(frase))
+        self.play(Write(text_formula[0]), run_time=2)
+        for i in range(len(taylor_formula) - 1):
+            self.play(TransformMatchingTex(text_formula[i], text_formula[i + 1]), run_time=1.5)
+
+        self.play(error_formula.animate.next_to(text_formula[-1], UP).shift(UP * 0.1))
+
+        steps = [
+            r"f(x_0+h) - f(x_0) - \langle\nabla f(x_0),h\rangle = \frac12 h^TH_fh + o(|h|^2)",
+            r"e(h) = \frac12 h^TH_fh + o(|h|^2)"
+        ]
+
+        tex_step0 = Tex(steps[0], font_size=FS, t2c=t2c).fix_in_frame().next_to(text_formula[-1], DOWN)
+        tex_step1 = Tex(steps[1], font_size=FS, t2c=t2c).fix_in_frame().next_to(tex_step0, DOWN)
+
+        self.play(TransformMatchingTex(text_formula[-1].copy(), tex_step0))
+        self.wait(1)
+        self.play(TransformMatchingTex(tex_step0.copy(), tex_step1))
+        self.wait(3)
+
+        self.play(*map(FadeOut, [text_formula[-1], tex_step0, tex_step1, error_formula]))
+        self.remove(frase, *text_formula, error_formula)
 
         new_f = lambda u, v: -self.func(u, v) + self.func(0, 0)
         graph = self.get_function_graph(axes, new_f, opacity=0.5)
         graph_mesh = self.get_mesh(graph).set_z_index(-1)
         frame.set_euler_angles(gamma=0 * DEGREES, phi=80 * DEGREES).move_to(ORIGIN)
         self.play(*map(FadeIn, [axes, graph, graph_mesh]))
-        self.play(frame.animate.scale(1.2))
+        # self.play(frame.animate.scale(1.2))
 
         df_dx = lambda x, y: self.der_par_x(self.func, x, y)
         df_dy = lambda x, y: self.der_par_y(self.func, x, y)
