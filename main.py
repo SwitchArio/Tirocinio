@@ -13,10 +13,10 @@ class Utils(ThreeDScene):
         # return 4 * np.exp(-(x ** 2 + y ** 2)) * np.sin(1 + 3 * x) * np.sin(y)
         return np.cos(x + y) / (1 + x ** 2)
 
-    def der_par_x(self, f, x, y, h=0.0000001):
+    def der_par_x(self, f, x, y, h=0.0001):
         return (f(x + h, y) - f(x, y)) / h
 
-    def der_par_y(self, f, x, y, h=0.0000001):
+    def der_par_y(self, f, x, y, h=0.0001):
         return (f(x, y + h) - f(x, y)) / h
 
     def get_function_graph(
@@ -147,7 +147,9 @@ class Utils(ThreeDScene):
 
 
 class MyScene(Utils):
-    # noinspection PyTypeChecker
+
+    FONT_SIZE = 30
+
     def construct(self):
         frame = self.camera.frame
 
@@ -182,7 +184,7 @@ class MyScene(Utils):
         plane = self.get_tan_plane(axes, xp.get_value(), yp.get_value())
         mesh_plane = self.get_mesh(plane)
 
-        FS = 30  # font size
+        FS = self.FONT_SIZE  # font size
         R = "\mathbb{R}"
 
         t1 = rf"Consideriamo una funzione $f:{R}^2\to{R}$ di classe $C^2$."
@@ -645,7 +647,7 @@ class MyScene(Utils):
             TexText(t2, font_size=FS)
         ).fix_in_frame().arrange(DOWN)
 
-        text_formula = [Tex(t, font_size=FS, t2c=t2c).fix_in_frame().move_to(frase.get_center()) for t in taylor_formula]
+        text_formula = [Tex(t, font_size=FS, t2c=t2c).fix_in_frame().move_to(frase.get_center()).shift(UP) for t in taylor_formula]
 
         self.play(Write(text1), run_time=2)
         self.wait(4)
@@ -660,26 +662,39 @@ class MyScene(Utils):
 
         steps = [
             r"f(x_0+h) - f(x_0) - \langle\nabla f(x_0),h\rangle = \frac12 h^TH_fh + o(|h|^2)",
-            r"e(h) = \frac12 h^TH_fh + o(|h|^2)"
+            r"e(h) = \frac12 h^TH_fh + o(|h|^2)",
+            r"e(h) = \frac12 h^T \begin{pmatrix}\partial_{xx}f &\partial_{xy}f\\ \partial_{yx}f &\partial_{yy}f\end{pmatrix} h + o(|h|^2)",
+            r"e(h) = \frac12 \begin{pmatrix}h^1,h^2\end{pmatrix} \begin{pmatrix}\partial_{xx}f &\partial_{xy}f\\ \partial_{yx}f &\partial_{yy}f\end{pmatrix} \begin{pmatrix}h^1\\ h^2\end{pmatrix} + o(|h|^2)",
+            r"e(h) = \frac12 [\partial_{xx}f (h^1)^2 + 2h^1h^2\partial_{xy}f + \partial_{yy}f (h^2)^2] + o(|h|^2)",
         ]
+        # todo: bisogna lavorare sul transform matchin text , però ci siamo
+        #       e aggiungere tipo x^2 +y^2 e far vedere che in effetti è proprio una parabola
+        #       quindi dipende dagli autovalori, quindi farlo vedere
 
-        tex_step0 = Tex(steps[0], font_size=FS, t2c=t2c).fix_in_frame().next_to(text_formula[-1], DOWN)
-        tex_step1 = Tex(steps[1], font_size=FS, t2c=t2c).fix_in_frame().next_to(tex_step0, DOWN)
+        tex_steps = [Tex(steps[i], font_size=FS, t2c=t2c).fix_in_frame() for i in range(len(steps))]
+        tex_steps[0].next_to(text_formula[-1], DOWN)
+        for i in range(1, len(steps)): tex_steps[i].next_to(tex_steps[i-1], DOWN)
 
-        self.play(TransformMatchingTex(text_formula[-1].copy(), tex_step0))
+        self.play(TransformMatchingTex(text_formula[-1].copy(), tex_steps[0]))
         self.wait(1)
-        self.play(TransformMatchingTex(tex_step0.copy(), tex_step1))
+        for i in range(1, len(steps)):
+            self.play(TransformMatchingTex(tex_steps[i-1].copy(), tex_steps[i]))
         self.wait(3)
 
-        self.play(*map(FadeOut, [text_formula[-1], tex_step0, tex_step1, error_formula]))
+        self.play(*map(FadeOut, [text_formula[-1], *tex_steps, error_formula]))
         self.remove(frase, *text_formula, error_formula)
 
-        new_f = lambda u, v: -self.func(u, v) + self.func(0, 0)
-        graph = self.get_function_graph(axes, new_f, opacity=0.5)
-        graph_mesh = self.get_mesh(graph).set_z_index(-1)
+        self.remove(plane, mesh_plane)
+
+        plane = NumberPlane(x_range=(-4, 4), y_range=(-4, 4),
+                            background_line_style={"stroke_color": WHITE, "stroke_width": 1.25, "stroke_opacity": 0.4})
+        x, y = axis_labels = VGroup(Tex("h^1"), Tex("h^2"))
+        x.next_to(plane.axes, RIGHT)
+        y.next_to(plane.axes, UP)
+        plane.axis_labels = axis_labels
+        plane.add(axis_labels)
+
         frame.set_euler_angles(gamma=0 * DEGREES, phi=80 * DEGREES).move_to(ORIGIN)
-        self.play(*map(FadeIn, [axes, graph, graph_mesh]))
-        # self.play(frame.animate.scale(1.2))
 
         df_dx = lambda x, y: self.der_par_x(self.func, x, y)
         df_dy = lambda x, y: self.der_par_y(self.func, x, y)
@@ -692,11 +707,53 @@ class MyScene(Utils):
         # heissiana
         Hf = lambda x, y: [[dxx(x, y), dxy(x, y)], [dxy(x, y), dyy(x, y)]]
 
+        new_f = lambda u, v: -self.func(u, v) + self.func(0, 0) # f rovesciata
+        paraboloid = lambda u, v: 0.5 * dxx(0, 0) * u**2 + dxy(0,0) * u * v + 0.5 * dyy(0, 0) * v**2
+
+
+        graph = self.get_function_graph(axes, paraboloid, opacity=0.5, color=GREY_A).set_z_index(-1)
+        graph_mesh = self.get_mesh(graph).set_z_index(-1)
+
+        f_graph = self.get_function_graph(axes, self.func, opacity=0.5)
+        f_graph_mesh = self.get_mesh(f_graph).set_z_index(-1)
+
+        self.play(*map(ShowCreation, [f_graph, f_graph_mesh]))
+
+        shift_in = ORIGIN - axes.c2p(0,0,self.func(0, 0))
+        self.play(
+            frame.animate.rotate(180*DEGREES).shift(IN).scale(1.4).set_euler_angles(phi=95*DEGREES),
+            f_graph.animate.shift(shift_in), f_graph_mesh.animate.shift(shift_in),
+            run_time=5
+        )
+
+        self.play(ShowCreation(plane))
+        self.play( *map(ShowCreation, [graph, graph_mesh]), run_time=2)
+        self.play(frame.animate.rotate(90*DEGREES).scale(1.2).set_euler_angles(phi=45*DEGREES), run_time=5)
+        # self.play(*map(FadeIn, [axes, graph, graph_mesh]))
+
         # self.embed()
 
-    def get_intro(self):
-        text = TexText("")
+    def get_sentence(self, texts : list[str], fix_in_frame=True, arrange=RIGHT, buff=SMALL_BUFF):
+        texts_mobj = [TexText(text, font_size=self.FONT_SIZE) for text in texts]
+        frase = Group(*texts_mobj)
+        if fix_in_frame: frase.fix_in_frame()
+        frase.arrange(arrange, buff=buff)
+        return frase
 
+    def get_comb_sentences(self, sentences : list, fix_in_frame=True, arrange=RIGHT, buff=SMALL_BUFF):
+        final_sentence = Group()
+
+        for mob in sentences:
+            if isinstance(mob, list):
+                final_sentence.add(self.get_sentence(mob))
+                continue
+
+            final_sentence.add(mob)
+
+        if fix_in_frame: final_sentence.fix_in_frame()
+        final_sentence.arrange(arrange, buff=buff)
+
+        return final_sentence
 
 class Brace3D(Brace):
     """
