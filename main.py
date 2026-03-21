@@ -1,6 +1,8 @@
 import sys
 import os
 
+import numpy as np
+
 sys.path.append(os.path.dirname(__file__))
 
 from manimlib import *
@@ -146,10 +148,33 @@ class Utils(ThreeDScene):
         return curve
 
 
+class test(Scene):
+
+    FONT_SIZE = 30
+
+    def construct(self):
+
+
+
+        steps = [
+            r"f(x_0+h) - f(x_0) - \langle\nabla f(x_0),h\rangle = \frac12 h^TH_fh + o(|h|^2)",
+            r"e(h) = \frac12 h^TH_fh + o(|h|^2)",
+            r"e(h) = \frac12 h^T \begin{pmatrix}\partial_{xx}f &\partial_{xy}f\\ \partial_{yx}f &\partial_{yy}f\end{pmatrix} h + o(|h|^2)",
+            r"e(h) = \frac12 \begin{pmatrix}h^1,h^2\end{pmatrix} \begin{pmatrix}\partial_{xx}f &\partial_{xy}f\\ \partial_{yx}f &\partial_{yy}f\end{pmatrix} \begin{pmatrix}h^1\\ h^2\end{pmatrix} + o(|h|^2)",
+            r"e(h) = (h^1)^2 \frac12\partial_{xx}f + h^1h^2\partial_{xy}f +  (h^2)^2 \frac12\partial_{yy}f + o(|h|^2)",
+        ]
+
+        text = [Tex(steps[i], font_size=self.FONT_SIZE+15).to_edge(UP, buff=LARGE_BUFF).shift(DOWN*1.5*i) for i in range( len(steps))]
+        idx = [index_labels(tex) for tex in text]
+
+
+        self.add( *text, *idx)
+
 class MyScene(Utils):
 
     FONT_SIZE = 30
 
+    # noinspection PyTypeChecker
     def construct(self):
         frame = self.camera.frame
 
@@ -405,6 +430,7 @@ class MyScene(Utils):
         tar_t = rf"$S:x^3=f(x^1,x^2)$"
         target_text = TexText(tar_t, font_size=FS, t2c={"S": S_COLOR}).fix_in_frame().to_edge(UP)
 
+
         self.play(Write(text1), run_time=2)
         self.wait()
         self.play(Write(text2), run_time=2)
@@ -419,9 +445,8 @@ class MyScene(Utils):
         t2 = ["e' la superficie definita al variare di $x$ come", r"$T:f(x_0)+\langle\nabla f(x_0),$", "$x$",
               r"$-x_0\rangle$"]
 
-        # todo : colorare P secondo qualche criterio
         text1, text2 = frase = Group(
-            TexText(t1, font_size=FS, t2c={"$S$": S_COLOR, "P=(x_0, f(x_0))": LIGHT_PINK}),
+            TexText(t1, font_size=FS, t2c={"$S$": S_COLOR}),
             TexText(*t2, font_size=FS, t2c={"$x$": X_COLOR})
         ).fix_in_frame().arrange(DOWN, buff=SMALL_BUFF)
 
@@ -439,10 +464,11 @@ class MyScene(Utils):
 
         # SCENA : come possiamo calcolare e(h) analiticamente ?
 
-        self.play(*map(FadeOut, [plane, mesh_plane, graph, graph_mesh]),
-                  frame.animate.set_euler_angles(theta=0 * DEGREES, phi=0 * DEGREES).scale(0.7),
-                  run_time=2)
-        # todo : remeber to resume updaters
+        self.play(
+            *map(FadeOut, [plane, mesh_plane, graph, graph_mesh]),
+            frame.animate.set_euler_angles(theta=0 * DEGREES, phi=0 * DEGREES).scale(0.7),
+            run_time=2
+        )
 
         # il piano è tangente in x_0
 
@@ -505,14 +531,9 @@ class MyScene(Utils):
         self.play(*map(FadeOut, mobj_to_fade))
         self.remove(*mobj_to_fade, y0_label, frase2)
 
-        t2 = "e(h) = "
-        t3 = "f(x_0+h)"
-        t4 = r" - f(x_0) - \langle\nabla f(x_0),h\rangle"
-        text2, text3, text4 = formula = Group(
-            Tex(t2, font_size=FS),
-            Tex(t3, font_size=FS),
-            Tex(t4, font_size=FS)
-        ).fix_in_frame().arrange(RIGHT, buff=SMALL_BUFF).to_edge(LEFT).shift(2 * UP)
+        text2, text3, text4 = formula = self.get_sentence(
+            ["$e(h) = $","$f(x_0+h)$", r"$ - f(x_0) - \langle\nabla f(x_0),h\rangle $"]
+        ).to_edge(LEFT).shift(2 * UP)
 
         self.play(frame.animate.restore(), *map(FadeIn, [graph, graph_mesh, plane, mesh_plane]), run_time=2)
         self.wait()
@@ -535,8 +556,6 @@ class MyScene(Utils):
             color=RED
         ).set_z_index(-1)
 
-        #todo: da adattare alla frase e(h) = --> e(h) = f(x_0+h) --> e(h) = f(x_0+h) - ( ... )
-
         # self.play(*map(ShowCreation, [y0_plane, y0_graph, line]))
         self.play(ShowCreation(line), Write(text2))
 
@@ -545,17 +564,13 @@ class MyScene(Utils):
         self.play(ShowCreation(y0_plane), *map(Write, [y0_plane_label, text4]), run_time=2)
         self.play(*map(Indicate, [y0_plane_label, text4]), run_time=1.5)
 
-        mobj_to_fade = [text1, text2, text3, text4, target_text, y0_plane_label, y0_graph_label]
+        mobj_to_fade = [text1, formula, target_text, y0_plane_label, y0_graph_label]
         self.play(*map(FadeOut, mobj_to_fade[2:]))
         self.remove(*mobj_to_fade)
 
-        t1 = "Per visualizzare il grafico di $e(h)$"
-        t2 = "dobbiamo spostarci sul piano tangente"
-
-        text1, text2 = frase = Group(
-            TexText(t1, font_size=FS),
-            TexText(t2, font_size=FS)
-        ).fix_in_frame().arrange(RIGHT).to_corner(UL)
+        text1, text2 = frase = self.get_sentence(
+            ["Per visualizzare il grafico di $e(h)$", "dobbiamo spostarci sul piano tangente"]
+        ).to_corner(UL)
 
         frame.save_state()
         self.play(Write(text1), run_time=2)
@@ -566,7 +581,9 @@ class MyScene(Utils):
             .move_to(plane.get_center())
             .set_euler_angles(gamma=-180 * DEGREES, phi=95 * DEGREES, theta=90 * DEGREES)
             .scale(0.8),
-            plane.animate.shift(OUT * 0.03)
+            plane.animate.shift(OUT * 0.03),
+            *map(FadeOut, [y0_plane, y0_graph, line, y0]),
+            run_time=3
         )
 
         self.wait()
@@ -610,13 +627,10 @@ class MyScene(Utils):
         self.play(Write(text5), run_time=2)
         self.wait()
         self.play(TransformMatchingTex(text5, error_formula))
-        self.wait(4)
-
-        self.play(*map(FadeOut, [frase2]))
-        self.wait(3)
+        self.wait(4.5)
 
         plane.clear_updaters()
-        mobj_to_fade = [axes, graph, graph_mesh, y0_plane, y0_graph, line, y0, plane, mesh_plane]
+        mobj_to_fade = [axes, graph, graph_mesh, plane, mesh_plane, frase2]
         self.play(*map(FadeOut, mobj_to_fade))
 
         HEISSIAN_COLOR = YELLOW
@@ -627,8 +641,12 @@ class MyScene(Utils):
         t2c = {
             "f(x_0+h)": FX0H_COLOR,
             "f(x_0)": FX0_COLOR,
-            r"\frac12 h^TH_fh": HEISSIAN_COLOR,
             r"\langle\nabla f(x_0),h\rangle": LINEAR_TERM_COLOR,
+            r"\frac12 h^TH_fh": HEISSIAN_COLOR,
+            r"\partial_{xx}f": HEISSIAN_COLOR,
+            r"\partial_{xy}f": HEISSIAN_COLOR,
+            r"\partial_{yx}f": HEISSIAN_COLOR,
+            r"\partial_{yy}f": HEISSIAN_COLOR
         }
 
         t1 = "Da dove nasce questa curvatura?"
@@ -647,7 +665,7 @@ class MyScene(Utils):
             TexText(t2, font_size=FS)
         ).fix_in_frame().arrange(DOWN)
 
-        text_formula = [Tex(t, font_size=FS, t2c=t2c).fix_in_frame().move_to(frase.get_center()).shift(UP) for t in taylor_formula]
+        text_formula = [Tex(t, font_size=FS, t2c=t2c).fix_in_frame().to_edge(UP, buff=LARGE_BUFF) for t in taylor_formula]
 
         self.play(Write(text1), run_time=2)
         self.wait(4)
@@ -658,33 +676,88 @@ class MyScene(Utils):
         for i in range(len(taylor_formula) - 1):
             self.play(TransformMatchingTex(text_formula[i], text_formula[i + 1]), run_time=1.5)
 
-        self.play(error_formula.animate.next_to(text_formula[-1], UP).shift(UP * 0.1))
+        self.play(error_formula.animate.next_to(text_formula[-1], UP))
 
         steps = [
             r"f(x_0+h) - f(x_0) - \langle\nabla f(x_0),h\rangle = \frac12 h^TH_fh + o(|h|^2)",
             r"e(h) = \frac12 h^TH_fh + o(|h|^2)",
             r"e(h) = \frac12 h^T \begin{pmatrix}\partial_{xx}f &\partial_{xy}f\\ \partial_{yx}f &\partial_{yy}f\end{pmatrix} h + o(|h|^2)",
             r"e(h) = \frac12 \begin{pmatrix}h^1,h^2\end{pmatrix} \begin{pmatrix}\partial_{xx}f &\partial_{xy}f\\ \partial_{yx}f &\partial_{yy}f\end{pmatrix} \begin{pmatrix}h^1\\ h^2\end{pmatrix} + o(|h|^2)",
-            r"e(h) = \frac12 [\partial_{xx}f (h^1)^2 + 2h^1h^2\partial_{xy}f + \partial_{yy}f (h^2)^2] + o(|h|^2)",
+            r"e(h) = (h^1)^2 \frac12\partial_{xx}f + h^1h^2\partial_{xy}f +  (h^2)^2 \frac12\partial_{yy}f + o(|h|^2)",
         ]
-        # todo: bisogna lavorare sul transform matchin text , però ci siamo
-        #       e aggiungere tipo x^2 +y^2 e far vedere che in effetti è proprio una parabola
-        #       quindi dipende dagli autovalori, quindi farlo vedere
+
+        # Data Structure: (start_source, end_source, start_target, end_target)
+        # Using None to replicate open slice behaviour (e.g. [:24] becomes None, 24)
+        raw_indices = [
+            # Transition 0 -> 1 (steps[0] -> steps[1])
+            [
+                (None, 24, None, 4),
+                (24, None, 4, None)
+            ],
+            # Transition 1 -> 2 (steps[1] -> steps[2])
+            [
+                (None, 10, None, 10),
+                (10, 12, 10, 28),
+                (12, None, 28, None),
+            ],
+            # Transition 2 -> 3
+            [
+                (8, 10, 8, 15),
+                (10, 28, 15, 33),
+                (28, 29, 33, 39),
+                (29, None, 39, None),
+            ],
+            # Transition 3 -> 4
+            [
+                (None, 5, None, 5),
+                (5, 8, 10, 13),
+                (16, 20, 13, 17),
+                (24, 28, 22, 26),
+                (28, 32, 35, 39),
+                (39, None, 39, None),
+            ]
+        ]
 
         tex_steps = [Tex(steps[i], font_size=FS, t2c=t2c).fix_in_frame() for i in range(len(steps))]
         tex_steps[0].next_to(text_formula[-1], DOWN)
         for i in range(1, len(steps)): tex_steps[i].next_to(tex_steps[i-1], DOWN)
 
+        matched_pairs = [
+            [
+                (tex_steps[i][s_start:s_end], tex_steps[i+1][t_start:t_end])
+                for s_start, s_end, t_start, t_end in transitions
+            ]
+            for i, transitions in enumerate(raw_indices)
+        ]
+
         self.play(TransformMatchingTex(text_formula[-1].copy(), tex_steps[0]))
         self.wait(1)
         for i in range(1, len(steps)):
-            self.play(TransformMatchingTex(tex_steps[i-1].copy(), tex_steps[i]))
+            self.play(TransformMatchingTex(tex_steps[i-1].copy(), tex_steps[i], matched_pairs=matched_pairs[i-1]))
         self.wait(3)
 
-        self.play(*map(FadeOut, [text_formula[-1], *tex_steps, error_formula]))
+        self.play(*map(FadeOut, [text_formula[-1], *tex_steps[:-1], error_formula]))
         self.remove(frase, *text_formula, error_formula)
 
-        self.remove(plane, mesh_plane)
+        abc_to_isolate = ["x^2", "a", "xy", "c", "y^2", "b"]
+        step_to_isolate = ["(h^1)^2", r"\frac12\partial_{xx}f", "h^1h^2", r"\partial_{xy}f", "(h^2)^2", r"\frac12\partial_{yy}f"]
+
+        abc_formula = Tex(
+            "a x^2 + c xy + b y^2 ",
+            isolate=abc_to_isolate,
+            font_size=FS+10
+        ).fix_in_frame()
+        tex_steps[-2].set_color(WHITE)
+        self.play(tex_steps[-1].animate.next_to(abc_formula, UP).set_color(WHITE))
+        self.play(Write(abc_formula))
+        for i in range(len(abc_to_isolate)):
+            self.play(*map(Indicate, [
+                abc_formula.get_part_by_tex(abc_to_isolate[i]),
+                tex_steps[-1].get_part_by_tex(step_to_isolate[i])
+            ]), run_time=2)
+
+        self.play(FadeOut(abc_formula), tex_steps[-1].animate.to_edge(UP, buff=MED_LARGE_BUFF))
+        self.remove(plane, mesh_plane, abc_formula)
 
         plane = NumberPlane(x_range=(-4, 4), y_range=(-4, 4),
                             background_line_style={"stroke_color": WHITE, "stroke_width": 1.25, "stroke_opacity": 0.4})
@@ -711,36 +784,218 @@ class MyScene(Utils):
         paraboloid = lambda u, v: 0.5 * dxx(0, 0) * u**2 + dxy(0,0) * u * v + 0.5 * dyy(0, 0) * v**2
 
 
-        graph = self.get_function_graph(axes, paraboloid, opacity=0.5, color=GREY_A).set_z_index(-1)
+        graph = self.get_function_graph(axes, paraboloid, opacity=0.5, color=GREY_A, resolution=(50, 50)).set_z_index(-1)
         graph_mesh = self.get_mesh(graph).set_z_index(-1)
 
         f_graph = self.get_function_graph(axes, self.func, opacity=0.5)
         f_graph_mesh = self.get_mesh(f_graph).set_z_index(-1)
 
+        shift_in = ORIGIN - axes.c2p(0,0,self.func(0, 0))
+
+        # forse ste 2 righe son da togliere
+        frame.rotate(180 * DEGREES).shift(IN).scale(1.4).set_euler_angles(phi=95 * DEGREES)
+        f_graph.shift(shift_in), f_graph_mesh.shift(shift_in)
+
         self.play(*map(ShowCreation, [f_graph, f_graph_mesh]))
 
-        shift_in = ORIGIN - axes.c2p(0,0,self.func(0, 0))
         self.play(
-            frame.animate.rotate(180*DEGREES).shift(IN).scale(1.4).set_euler_angles(phi=95*DEGREES),
-            f_graph.animate.shift(shift_in), f_graph_mesh.animate.shift(shift_in),
-            run_time=5
+            frame.animate.rotate(90*DEGREES).scale(1.7).set_euler_angles(phi=0),
+            FadeOut(tex_steps[-1]), run_time=4
+        )
+        self.play(ShowCreation(plane))
+        self.play(frame.animate.set_euler_angles(phi=75*DEGREES).scale(0.7), run_time=5)
+        self.play(*map(ShowCreation, [graph, graph_mesh]), Write(tex_steps[-1]),  run_time=2)
+
+        tex_steps[-2].move_to(tex_steps[-1])
+        self.play(TransformMatchingTex(tex_steps[-1], tex_steps[-2]),  run_time=2)
+        self.play( *map(FadeOut, [f_graph, f_graph_mesh]) )
+
+        opacity_value = 0.3
+        diag_txt = r"e(h) = \frac12 \begin{pmatrix}h^1,h^2\end{pmatrix} P \begin{pmatrix}\lambda_1 &0\\ 0 &\lambda_2\end{pmatrix}P^T \begin{pmatrix}h^1\\ h^2\end{pmatrix} + o(|h|^2)"
+        diag = Tex(diag_txt, font_size=FS).fix_in_frame().move_to(tex_steps[-2])
+        diag.save_state()
+        diag[:15].set_opacity(opacity_value)
+        diag[26:].set_opacity(opacity_value)
+        matched_pairs = [
+            (tex_steps[-2][:15], diag[:15]),
+            (tex_steps[-2][15:33], diag[15:26]),
+            (tex_steps[-2][33:], diag[26:]),
+        ]
+        self.play(
+            tex_steps[-2][:15].animate.set_opacity(opacity_value),
+            tex_steps[-2][33:].animate.set_opacity(opacity_value),  run_time=2
         )
 
-        self.play(ShowCreation(plane))
-        self.play( *map(ShowCreation, [graph, graph_mesh]), run_time=2)
-        self.play(frame.animate.rotate(90*DEGREES).scale(1.2).set_euler_angles(phi=45*DEGREES), run_time=5)
-        # self.play(*map(FadeIn, [axes, graph, graph_mesh]))
+
+        frase1, frase2 = gruppo = self.get_comb_sentences([
+                self.get_sentence(["Dunque possiamo diagonalizzarla,", r"$\lambda_1,\lambda_2$ sono i due autovalori"]),
+                self.get_sentence(["Nell'esempio che state vedendo sono ", r"$\lambda_1=-2+\sqrt{2}$ e $\lambda_2=-2-\sqrt{2}$"]),
+        ]).next_to(tex_steps[-2], DOWN)
+
+        gruppo2 = self.get_comb_sentences([
+            self.get_sentence(["Applicare il cambio di variabile $u=P^Th$", "equivale a considerare gli assi $u^1$, $u^2$ ruotati"]),
+            self.get_sentence([r"in cui si ha la forma canonica di $e(\cdot)$"]),
+        ]).to_edge(DOWN, buff=MED_SMALL_BUFF)
+
+        canon_txt = r"e(h) = \frac12 u^T \begin{pmatrix}\lambda_1 &0\\ 0 &\lambda_2\end{pmatrix} u + o(|h|^2)"
+        canon = Tex(canon_txt, font_size=FS).fix_in_frame().move_to(tex_steps[-2])
+
+        u1 = Arrow(
+            plane.get_origin(), plane.x_axis.get_end(),
+            fill_color=RED, buff=0, stroke_width=1, stroke_color=RED
+        ).set_z_index(-2).shift(OUT*0.01)
+        u2 = Arrow(
+            plane.get_origin(), plane.y_axis.get_end(),
+            fill_color=RED, buff=0, stroke_width=1, stroke_color=RED
+        ).set_z_index(-2).shift(OUT*0.01)
+        u1_label = Tex("u^1", t2c={"u^1":RED}).next_to(u1.get_end(), UR)
+        u2_label = Tex("u^2", t2c={"u^2":RED}).next_to(u2.get_end(), UR)
+
+        always(u1_label.next_to, u1.get_end(), UR)
+        always(u2_label.next_to, u2.get_end(), UR)
+
+        lam1 = ValueTracker(-0.5858)
+        lam2 = ValueTracker(-3.4142)
+        theta = ValueTracker(5 * PI / 12)
+
+        self.play(Write(frase1[0]))
+        frame.save_state()
+        self.play(TransformMatchingTex(tex_steps[-2],diag, matched_pairs=matched_pairs), Write(frase1[1]), run_time=2)
+        self.wait(2)
+        self.play(frame.animate.scale(1.8).set_euler_angles(phi=0*DEGREES), FadeOut(frase1))
+        self.play(Write(gruppo2[0][0]))
+        self.play(diag.animate.restore())
+        self.play(
+            TransformMatchingTex(
+                diag, canon,
+                matched_pairs=[
+                    (diag[:8], canon[:8]),
+                    (diag[8:16], canon[8:10]),
+                    (diag[16:24], canon[10:18]),
+                    (diag[24:27], canon[18:19]),
+                    (diag[27:], canon[19:])
+                ]
+            ), run_time=2
+        )
+        self.play(*map(ShowCreation, [u1,u2]), *map(Write, [u1_label,u2_label]))
+        self.play(
+            Write(gruppo2[0][1]),
+            u1.animate.rotate(-65 * DEGREES, about_point=plane.get_origin()),
+            u2.animate.rotate(-65 * DEGREES, about_point=plane.get_origin()),
+            run_time=5
+        )
+        self.play(Write(gruppo2[1]))
+        self.wait(4)
+        self.play(frame.animate.restore(), FadeOut(gruppo2), *map(FadeOut, [u1, u2, u1_label,u2_label]))
+
+        self.play(Write(frase2[0]))
+        self.play(Write(frase2[1]))
+
+        frase = self.get_sentence([
+            r"$\lambda_1=-2+\sqrt{2}$ e $\lambda_2=-2-\sqrt{2}$", "sono entrambi numeri negativi,",
+            "per questo la parabola e' rivolta verso il basso"
+        ]).to_corner(UL, buff=MED_SMALL_BUFF)
+
+        target = self.get_sentence([r"$\lambda_1<0$ e $\lambda_2<0$", "sono entrambi numeri negativi,"]).to_corner(UL, buff=MED_SMALL_BUFF)
+
+        self.play(*map(FadeOut, [frase2, canon]), TransformMatchingTex(frase2[1].copy(), frase[0]), run_time=2)
+        self.play(Write(frase[1]))
+        self.play(TransformMatchingTex(frase[0], target[0]), TransformMatchingTex(frase[1], target[1]))
+        frase[2].next_to(target[1], RIGHT, buff=SMALL_BUFF)
+        self.play(Write(frase[2]))
+
+        get_e = lambda l1, l2, th: lambda u, v: 0.5 * (l1 * (u * np.cos(th) + v * np.sin(th))**2
+                                                       + l2 * (-u * np.sin(th) + v * np.cos(th))**2)
+
+        l1 = Group(
+            Tex("\lambda_1=", font_size=FS),
+            DecimalNumber(lam1.get_value(), font_size=FS, stroke_width=0.05, stroke_color=BLACK, show_ellipsis=True),
+        ).fix_in_frame().arrange(RIGHT, buff=SMALL_BUFF).to_edge(UP).shift(RIGHT*5)
+        l2 = Group(
+            Tex("\lambda_2=", font_size=FS),
+            DecimalNumber( lam2.get_value(), font_size=FS, stroke_width=0.05, stroke_color=BLACK, show_ellipsis=True)
+        ).fix_in_frame().arrange(RIGHT, buff=SMALL_BUFF).next_to(l1, DOWN)
+
+        self.play(
+            FadeOut(frase[2]), FadeOut(target),
+            TransformMatchingTex(target[0].copy(), l1[0]),
+            TransformMatchingTex(target[0].copy(), l2[0])
+        )
+
+        self.play(Write(l1[1]), Write(l2[1]),)
+
+        f_always(l1[1].set_value,lam1.get_value)
+        f_always(l2[1].set_value,lam2.get_value)
+
+        frase = self.get_sentence(["Invece per segni opposti si ha una sella"]).to_corner(UL, buff=MED_SMALL_BUFF)
+        self.play(Write(frase))
+
+        # graph.add_updater(lambda mob: mob.become(self.get_function_graph(axes, e, resolution=(28, 28), opacity=0.5, color=GREY_A)))
+        # graph_mesh.add_updater(lambda mob: mob.become(self.get_mesh(graph)))
+
+        new_lambda_values = [0.5, -3.4142]
+        new_graph = self.get_function_graph(
+            axes, get_e(new_lambda_values[0], new_lambda_values[1], theta.get_value()),
+            resolution=(50, 50), opacity=0.5, color=GREY_A
+        )
+        self.play(
+            lam1.animate.set_value(new_lambda_values[0]),
+            graph.animate.become(new_graph),
+            graph_mesh.animate.become(self.get_mesh(new_graph)),
+            frame.animate.scale(1.5).set_euler_angles(phi=65*DEGREES),
+            run_time=3
+        )
+        self.wait(2)
+
+        new_lambda_values = [-3.4142, 0.5 ]
+        new_graph = self.get_function_graph(
+            axes, get_e(new_lambda_values[0], new_lambda_values[1], theta.get_value()),
+            resolution=(50, 50), opacity=0.5, color=GREY_A
+        )
+        self.play(
+            lam1.animate.set_value(new_lambda_values[0]),
+            lam2.animate.set_value(new_lambda_values[1]),
+            graph.animate.become(new_graph),
+            graph_mesh.animate.become(self.get_mesh(new_graph)),
+            run_time=3
+        )
+
+        self.play(FadeOut(frase))
+
+        frase = self.get_sentence(["Se entrambi positivi", "la parabola e' rivolta verso l'alto"]).to_corner(DL, buff=MED_SMALL_BUFF)
+        self.play(Write(frase[0]))
+
+        new_lambda_values = [0.4312, 0.6174]
+        new_graph = self.get_function_graph(
+            axes, get_e(new_lambda_values[0], new_lambda_values[1], theta.get_value()),
+            resolution=(50, 50), opacity=0.5, color=GREY_A
+        )
+
+        self.play(
+            Write(frase[1]),
+            frame.animate.set_euler_angles(phi=85 * DEGREES).shift(3*OUT).scale(0.8),
+            lam1.animate.set_value(new_lambda_values[0]),
+            lam2.animate.set_value(new_lambda_values[1]),
+            graph.animate.become(new_graph),
+            graph_mesh.animate.become(self.get_mesh(new_graph)),
+            run_time=3
+        )
+        self.wait(8)
 
         # self.embed()
 
-    def get_sentence(self, texts : list[str], fix_in_frame=True, arrange=RIGHT, buff=SMALL_BUFF):
+    def get_sentence(self, texts : list[str], fix=True, arrange = RIGHT, buff=SMALL_BUFF) -> Group[TexText]:
         texts_mobj = [TexText(text, font_size=self.FONT_SIZE) for text in texts]
-        frase = Group(*texts_mobj)
-        if fix_in_frame: frase.fix_in_frame()
-        frase.arrange(arrange, buff=buff)
+        if len(texts_mobj) > 1:
+            frase = Group(*texts_mobj)
+            frase.arrange(arrange, buff=buff)
+        else:
+            frase = texts_mobj[0]
+        if fix: frase.fix_in_frame()
+
         return frase
 
-    def get_comb_sentences(self, sentences : list, fix_in_frame=True, arrange=RIGHT, buff=SMALL_BUFF):
+    def get_comb_sentences(self, sentences : list, fix=True, arrange=DOWN, buff=SMALL_BUFF) -> Group[TexText | Group[TexText]]:
         final_sentence = Group()
 
         for mob in sentences:
@@ -750,7 +1005,7 @@ class MyScene(Utils):
 
             final_sentence.add(mob)
 
-        if fix_in_frame: final_sentence.fix_in_frame()
+        if fix: final_sentence.fix_in_frame()
         final_sentence.arrange(arrange, buff=buff)
 
         return final_sentence
