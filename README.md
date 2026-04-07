@@ -9,7 +9,7 @@ This repository contains the projects developed during my internship. The primar
 
 The repository is organized into distinct sub-projects, each focusing on a specific mathematical topic or animation scene.
 
-    PrimoProgettoTirocinio/
+    Tirocinio/
     │
     ├── tangent-plane-to-hessian-eigenvalues/
     │   ├── main.py                # Core animation script for the Hessian scene
