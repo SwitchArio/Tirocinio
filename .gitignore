@@ -4,3 +4,7 @@
 /.idea/
 __pycache__/
 *.pyc
+/local-analysis-implicit-function-theorem/slides
+/local-analysis-implicit-function-theorem/slides_assets
+/local-analysis-implicit-function-theorem/videos
+/local-analysis-implicit-function-theorem/slides.html
