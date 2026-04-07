@@ -470,7 +470,7 @@ class MyScene(Utils):
             run_time=2
         )
 
-        # il piano è tangente in x_0
+        # il piano e' tangente in x_0
 
         x0 = self.get_Dot3D(ORIGIN, axes, radius=0.08, color=RED)
         x0_label = Tex("x_0", font_size=FS).next_to(x0, UP + 0.35 * RIGHT).shift(OUT * 0.1)
