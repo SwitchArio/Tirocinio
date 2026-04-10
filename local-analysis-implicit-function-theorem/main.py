@@ -195,6 +195,16 @@ class TextSequence:
         self.next()
         return self.play(**kwargs)
 
+    def save(self):
+        self.saved = self.current_mob
+
+    def restore(self, **kwargs):
+        if self.saved is None: return None
+        self.last_mob = self.current_mob
+        self.current_mob = self.saved
+        self.saved = None
+        return TransformMatchingTex(self.last_mob, self.current_mob, **kwargs)
+
     def clear(self):
         """Fa svanire il testo attualmente a schermo."""
         if self.current_mob is not None:
