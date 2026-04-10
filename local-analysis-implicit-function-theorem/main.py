@@ -1,8 +1,11 @@
 from manimlib import *
 from manim_slides.slide import Slide, ThreeDSlide
 
+
 class CommonToAll(ThreeDSlide):
+
     FONT_SIZE = 30
+
 
 class BaseAxisSurfaceScene(CommonToAll):
 
@@ -74,6 +77,7 @@ class BaseAxisSurfaceScene(CommonToAll):
         curve.set_stroke(width=5, opacity=1, color=YELLOW)
         return curve
 
+
 class Intro(BaseAxisSurfaceScene):
 
     def construct(self):
@@ -81,27 +85,24 @@ class Intro(BaseAxisSurfaceScene):
         frame.set_euler_angles(phi=65 * DEGREES, theta=30 * DEGREES).shift(UP).scale(1.3)
         axes = self.get_axes()
 
-        xc, yc = paraboloid_center = (2,1)
-        a, b, c = (0.5,2, 1)
-        f = lambda x,y : a * (x - xc) ** 2 + b * (y - yc) ** 2
+        xc, yc = paraboloid_center = (2, 1)
+        a, b, c = (0.5, 2, 1)
+        f = lambda x, y: a * (x - xc) ** 2 + b * (y - yc) ** 2
 
         paraboloid = self.get_function_graph(axes, f, opacity=0.35)
         paraboloid_mesh = SurfaceMesh(paraboloid, stroke_opacity=0.5)
         surface = Group(paraboloid_mesh, paraboloid)
 
-        plane = self.get_function_graph(axes, lambda x,y: c, opacity=0.35, resolution=(10,10))
+        plane = self.get_function_graph(axes, lambda x, y: c, opacity=0.35, resolution=(10, 10))
         curve = self.get_ellissoid_curve(axes, paraboloid_center, a, b, c)
 
-        texts = ["$F(x,y)$", "$F(x,y)=c$", "$F(x,y)-c=0$", "$G(x,y)=0$", "$x\mapsto y(x)$ ?"]
-        on_screen = self.get_sentence(texts[0]).to_corner(UR, buff=LARGE_BUFF)
-        next_one = self.get_sentence(texts[1]).to_corner(UR, buff=LARGE_BUFF)
+        texts = ["$F(x,y)$", "$F(x,y)=c$", "$F(x,y)-c=0$", "$G(x,y)=0$", r"$x\mapsto y(x)$ ?"]
+        seq = TextSequence(texts)
+        seq.target.to_corner(UR, buff=LARGE_BUFF)
 
         self.play(ShowCreation(axes))
-        self.play(*map(ShowCreation, surface), Write(on_screen), run_time=3)
-        self.play(ShowCreation(plane), TransformMatchingTex(on_screen, next_one), run_time=2)
-        on_screen = next_one
-        next_one = self.get_sentence(texts[2]).to_corner(UR, buff=LARGE_BUFF)
-
+        self.play(*map(ShowCreation, surface), seq.next_and_play(), run_time=3)
+        self.play(ShowCreation(plane), seq.next_and_play(), run_time=2)
 
         self.next_slide()
         self.play(ShowCreation(curve), run_time=2)
@@ -110,14 +111,9 @@ class Intro(BaseAxisSurfaceScene):
         shift_qty = ORIGIN - axes.c2p(0, 0, c)
 
         self.next_slide()
-        self.play(surface.animate.shift(shift_qty), curve.animate.shift(shift_qty), TransformMatchingTex(on_screen, next_one))
-        on_screen = next_one
-        next_one = self.get_sentence(texts[3]).to_corner(UR, buff=LARGE_BUFF).next_to(on_screen, DOWN)
+        self.play(surface.animate.shift(shift_qty), curve.animate.shift(shift_qty), seq.next_and_play())
 
-        self.play(TransformMatchingTex(on_screen, next_one))
-        on_screen = next_one
-        next_one = self.get_sentence(texts[3]).to_corner(UR, buff=LARGE_BUFF).next_to(on_screen, DOWN)
-        # fare una classe che mi permetta di gestire tutte le scritte scena per scena, e posso fare next, next_next, last, last_last, fade personalizzati
+        self.play(seq.next_and_play())
 
         self.next_slide()
         self.play(
@@ -125,9 +121,9 @@ class Intro(BaseAxisSurfaceScene):
             FadeOut(surface), run_time=2
         )
 
-    def get_sentence(self, texts : list[str] | str, fix=True, arrange = RIGHT, buff=SMALL_BUFF) -> Group[TexText] | TexText:
+    def get_sentence(self, texts: list[str] | str, fix=True, arrange=RIGHT, buff=SMALL_BUFF) -> Group[TexText] | TexText:
 
-        texts = [texts] if isinstance(texts, str) else texts # check and adjusts depening on how many strings
+        texts = [texts] if isinstance(texts, str) else texts  # check and adjusts depening on how many strings
         texts_mobj = [TexText(text, font_size=self.FONT_SIZE) for text in texts]
 
         if len(texts_mobj) > 1:
@@ -139,7 +135,7 @@ class Intro(BaseAxisSurfaceScene):
 
         return frase
 
-    def get_comb_sentences(self, sentences : list, fix=True, arrange=DOWN, buff=SMALL_BUFF) -> Group[TexText | Group[TexText]]:
+    def get_comb_sentences(self, sentences: list, fix=True, arrange=DOWN, buff=SMALL_BUFF) -> Group[TexText | Group[TexText]]:
         final_sentence = Group()
 
         for mob in sentences:
@@ -163,10 +159,11 @@ class TextSequence:
         self.buff = buff
 
         self.index = 0
+        self.saved = None
         self.last_mob = None
         self.current_mob = None
 
-        self.target = TexText("", font_size=self.font_size)
+        self.target = VectorizedPoint(ORIGIN)
 
     def next(self):
         """Passa alla stringa successiva nella sequenza."""
@@ -220,22 +217,3 @@ class TextSequence:
 
 # manim-slides Intro
 # manim-slides render --GL main.py Intro
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

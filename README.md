@@ -1,4 +1,4 @@
-# Internship Project: Manim Mathematical Animations 🎓📽️
+# Internship: Manim Mathematical Animations 🎓📽️
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
 [![ManimGL](https://img.shields.io/badge/Manim-GL-grey)](https://github.com/3b1b/manim)
