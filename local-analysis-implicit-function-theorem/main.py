@@ -154,6 +154,55 @@ class Intro(BaseAxisSurfaceScene):
 
         return final_sentence
 
+
+class TextSequence:
+    def __init__(self, texts, font_size=30, corner=UR, buff=LARGE_BUFF):
+        self.texts = texts
+        self.font_size = font_size
+        self.corner = corner
+        self.buff = buff
+
+        self.index = 0
+        self.last_mob = None
+        self.current_mob = None
+
+        self.target = TexText("", font_size=self.font_size)
+
+    def next(self):
+        """Passa alla stringa successiva nella sequenza."""
+        if self.index >= len(self.texts): return None
+
+        # Genera e posiziona il nuovo testo
+        new_text = TexText(self.texts[self.index], font_size=self.font_size)
+        new_text.fix_in_frame()
+        new_text.move_to(self.target)
+
+        # Aggiorna lo stato
+        self.last_mob = self.current_mob
+        self.current_mob = new_text
+        self.index += 1
+
+        return self.current_mob
+
+    def play(self, **kwargs):
+        """plays current animation"""
+        if self.last_mob is None:
+            return Write(self.current_mob)
+        else:
+            return TransformMatchingTex(self.last_mob, self.current_mob, **kwargs)
+
+    def next_and_play(self, **kwargs):
+        self.next()
+        return self.play(**kwargs)
+
+    def clear(self):
+        """Fa svanire il testo attualmente a schermo."""
+        if self.current_mob is not None:
+            fade_animation = FadeOut(self.current_mob)
+            self.current_mob = None
+            return fade_animation
+        return None
+
 # manim-slides convert Intro slides.html --open
 # manim-slides convert Intro slides.html -cwidth=1920 -cheight=1080 --open
 # manim-slides convert Intro slides.html -cwidth=1920 -cheight=1080 -cmargin=0 -cmin_scale=1 -cmax_scale=1 --open
