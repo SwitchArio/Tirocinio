@@ -237,7 +237,20 @@ class Derivative(CommonToAll, Slide):
             frase = texts_mobj[0]
         if fix: frase.fix_in_frame()
 
-        return frase
+        # View the function as a transformation
+        input_space = axes.get_x_axis()
+        input_space[1].set_color(YELLOW)
+        n = 250
+        x_min = 0
+        x_max = 3
+        dots = VGroup(*[
+            Dot(radius=0.001)
+                      .move_to(input_space.n2p(x_min + (i / (n - 1)) * (x_max - x_min)))
+                      .set_color(interpolate_color(YELLOW_E, YELLOW_A, i / n))
+                      .set_stroke(width=10)
+            for i in range(n)
+        ])
+        self.play(AnimationGroup(*[FadeIn(dot, shift=DOWN) for dot in dots], lag_ratio=0.003))
 
     def get_comb_sentences(self, sentences: list, fix=True, arrange=DOWN, buff=SMALL_BUFF) -> Group[TexText | Group[TexText]]:
         final_sentence = Group()
