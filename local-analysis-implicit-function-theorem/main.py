@@ -121,7 +121,111 @@ class Intro(BaseAxisSurfaceScene):
             FadeOut(surface), run_time=2
         )
 
-    def get_sentence(self, texts: list[str] | str, fix=True, arrange=RIGHT, buff=SMALL_BUFF) -> Group[TexText] | TexText:
+
+        hypot_func = TextSequence([r"$x\mapsto y(x)$", "$\exists y(x)$ ? "])
+        hypot_func.target.next_to(eq_problem.current_mob, DOWN)
+        hypot_func.next().set_color(YELLOW)
+
+        RR = "\mathbb{R}"
+        comment = TextSequence(
+            [
+                "Questa non e' una funzione",
+                r"Ma localmente?\\ In un intorno di $(x_0,y_0)$?",
+                "Il teorema della funzione implicita risponde a questa domanda",
+                fr"Sia $A\subset{RR}^2$ e $F:A\to{RR}^2$ di classe $C^1$, se $F(x_0,y_0)=0$ per $(x_0,y_0)\in A$ e se\\[4pt] "
+                r"$\displaystyle\frac{\partial F}{\partial y}\neq 0$\\[4pt] allora $\exists ! y(x) $ tale che $F(x,y(x))=0$ in un intorno di $(x_0,y_0)$",
+                r"Qual e' il significato di $\displaystyle\frac{\partial F}{\partial y}\neq 0$ ? ",
+                "Per capirlo facciamo qualche passo indietro"
+            ]
+        )
+        comment.target.next_to(hypot_func.target, 2*DOWN)
+        self.play(hypot_func.play())
+        self.play(comment.next_and_play(), frame.animate.scale(camera_scaling))
+
+        self.next_slide() # Creating Arc in the neighborhood of (x0,y0)
+
+        ARC_COLOR = PINK
+        alpha_start, alpha_end = [0.05, 0.25]
+        arc = curve.get_subcurve(alpha_start, alpha_end).set_color(ARC_COLOR).set_stroke(width=8)
+        arc_middle = curve.point_from_proportion(0.5 * (alpha_end + alpha_start) - 0.01)
+        point = Dot(arc_middle, radius=0.05).set_color(ARC_COLOR)
+        self.play(eq_problem.fade_out(), comment.fade_out(), hypot_func.fade_out())
+        hypot_func.next().set_color(ARC_COLOR).next_to(self.to_fixed_coord(point.get_center(), camera_center, total_scaling), UR)
+
+        comment.next().set_color_by_tex("intorno di $(x_0,y_0)$", ARC_COLOR)
+        self.play(curve.animate.set_color(GREY_A))
+        self.play(comment.play())
+        self.play(ShowCreation(arc), ShowCreation(point), hypot_func.play(), run_time=3)
+
+        comment.target.move_to(ORIGIN).to_edge(UP, buff=LARGE_BUFF).shift(RIGHT * 0.5)
+        comment.next()
+        self.play(comment.play())
+
+        comment.next()[52:60].set_color(ARC_COLOR)
+        self.play(comment.play())
+
+        self.next_slide()
+        comment.next()[21:29].set_color(ARC_COLOR)
+        self.play(comment.play(matched_pairs=[(comment.last_mob[52:60], comment.current_mob[21:29])]))
+        self.wait()
+        self.play(comment.next_and_play())
+        # self.embed()
+
+class Derivative(CommonToAll, Slide):
+    def construct(self):
+        comment = TextSequence(["Immaginiamo di avere una funzione"])
+        frame = self.camera.frame
+        # Plot a function
+        
+        #  - get axes
+        x_range = (-3, 3)
+        y_range = (-3, 3)
+        axes = Axes( x_range=x_range, y_range=y_range ).set_stroke(width=5, color=GREY)
+        axes.axis_labels = VGroup(*map(Tex, ["x", "f(x)"]))
+        axes.add(axes.axis_labels)
+        axes.add_coordinate_labels(font_size=18, excluding=[])
+        axes.coordinate_labels[0][x_range[1]].set_opacity(0)
+        axes.coordinate_labels[1][y_range[1]].set_opacity(0)
+        self.add(axes)
+        
+        self.wait(1)
+
+        # - draw function
+        def func(x):
+            return x ** 3 + 3 * x ** 2 - x - 3
+        curve = ParametricCurve(
+            lambda t: (axes.c2p(t, func(t))), (-3.5, x_range[1], 0.1)
+        ).set_stroke(width=8, color=BLUE, opacity=0.7)
+        f_of_x = Tex(r"f(x) = x^3 + 3x^2 - x - 4", font_size=40).set_color(BLUE).to_corner(UR, buff=0.5)
+        self.play(Write(f_of_x, run_time=2), ShowCreation(curve, run_time=4))
+        self.wait(1)
+
+        # Draw a set of local axes labeled dx and dy
+        points = curve.get_points()
+        chosen_point_index = 20
+        localAxes = Axes( x_range=(-5, 5), y_range=(-5, 5) )
+        localAxes.axis_labels = VGroup(*map(Tex, ["dx", "df(x)"]))
+        localAxes.axis_labels.set_opacity(0)
+        localAxes.set_stroke(width=3, color=GREY).scale(0.1).move_to(points[chosen_point_index])
+
+        self.bring_to_back(localAxes) # modifies the z-index
+        self.play(FadeIn(localAxes))
+
+        # Zoom in on part of the graph
+        frame.save_state()
+        zoom_run_time = 5
+        self.play(
+            FadeOut(f_of_x),
+            frame.animate(run_time=zoom_run_time).scale(0.008).move_to(points[chosen_point_index] + UP * 0.01),
+            localAxes.animate(run_time=zoom_run_time).set_stroke(width=5)
+        )
+
+        # Show small changes in x and y
+        braces_scaling = 0.011
+        text_buff = 0.002
+        text_FS = 0.5
+        F_COLOR = PINK
+        X_COLOR = YELLOW
 
         texts = [texts] if isinstance(texts, str) else texts  # check and adjusts depening on how many strings
         texts_mobj = [TexText(text, font_size=self.FONT_SIZE) for text in texts]
