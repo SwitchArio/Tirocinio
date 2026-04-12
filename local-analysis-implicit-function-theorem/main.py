@@ -227,8 +227,38 @@ class Derivative(CommonToAll, Slide):
         F_COLOR = PINK
         X_COLOR = YELLOW
 
-        texts = [texts] if isinstance(texts, str) else texts  # check and adjusts depening on how many strings
-        texts_mobj = [TexText(text, font_size=self.FONT_SIZE) for text in texts]
+        brace_x = Brace(Line(ORIGIN, RIGHT), DOWN).set_color(X_COLOR).scale(braces_scaling).align_to(localAxes.c2p(0, 0), UL)
+        delta_x = Tex(r"\Delta x", font_size=text_FS).set_color(X_COLOR).next_to(brace_x, DOWN, buff=text_buff)
+
+        comment.next().set_color_by_tex("$\Delta f$", F_COLOR).set_color_by_tex("$\Delta x$", X_COLOR)
+        self.play(GrowFromEdge(brace_x, UP), Write(delta_x), comment.play())
+
+        brace_fx = Brace(Line(ORIGIN, UP * 2.8), RIGHT).set_color(F_COLOR).scale(braces_scaling).align_to(brace_x.get_corner(UR), DL)
+        delta_fx = Tex(r"\Delta f(x)", font_size=text_FS).set_color(F_COLOR).next_to(brace_fx, RIGHT, buff=text_buff)
+        self.play(GrowFromEdge(brace_fx, LEFT), Write(delta_fx))
+
+        # Show that Delta f(x) = Delta x * c
+
+        msg = "(localmente)"
+        equation = Tex(
+            r"\Delta f(x)", r"\ \approx\ ", r"\Delta x", r"\ \cdot\ {c}", rf"\text{{{msg}}}",
+            tex_to_color_map={r"\Delta f(x)": F_COLOR, r"\Delta x": X_COLOR, "{c}": GREEN},
+        ).fix_in_frame().to_corner(UL)
+        equation[r"\text{(localmente)}"].scale(0.85).next_to(equation[:-len(msg)], DOWN)
+
+        self.play( Write(equation), run_time=2.5 )
+
+        self.wait(2)
+        rect = SurroundingRectangle(equation[:-len(msg)], buff=0.1, fill_opacity=0, stroke_width=300, stroke_color=TEAL).fix_in_frame()
+        self.play(ShowCreation(rect, run_time=2))
+        self.play(FadeOut(rect))
+        self.wait(1)
+
+        # Zoom back out to see the graph
+        self.play(
+            *map(FadeOut, [localAxes, brace_x, brace_fx, delta_x, delta_fx]),
+            comment.fade_out(), self.camera.frame.animate(run_time=zoom_run_time).restore()
+        )
 
         if len(texts_mobj) > 1:
             frase = Group(*texts_mobj)
