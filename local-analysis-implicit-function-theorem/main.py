@@ -1,9 +1,6 @@
-from asyncore import write
-
-import numpy as np
 from manimlib import *
 from manim_slides.slide import Slide, ThreeDSlide
-from sympy import false
+
 
 
 class CommonToAll:
@@ -214,8 +211,6 @@ class Intro(BaseAxisSurfaceScene):
         self.play(comment.play(matched_pairs=[(comment.last_mob[52:60], comment.current_mob[21:29])]))
         self.wait()
         self.play(comment.next_and_play())
-        # self.embed()
-
 
 class CommonToDerivative(CommonToAll):
     X_COLOR = YELLOW
@@ -254,7 +249,6 @@ class CommonToDerivative(CommonToAll):
         return ParametricCurve(
             lambda t: (axes.c2p(t, f(t))), t_range=t_range
         ).set_stroke(width=8, color=BLUE, opacity=0.7)
-
 
 class DerivativeMeaning(CommonToDerivative, Slide):
     def construct(self):
@@ -568,7 +562,13 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
     transf_run_time = 4
     restoring_run_time = transf_run_time - 1
 
-    def apply_f_to_grid_animation(self, moving_plane, input_choosen_square = None, output_choosen_square = None, reset_grid_position = True):
+    def apply_f_to_grid_animation(
+            self,
+            moving_plane,
+            input_choosen_square = None,
+            output_choosen_square = None,
+            reset_grid_position = True
+    ):
         frame = self.camera.frame
 
         # saving starting position of camera and squares y-grid
@@ -585,8 +585,12 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
                 run_time=3
             )
             self.wait(2)
-            self.play(frame.animate(run_time=self.restoring_run_time).restore(),
-                      MoveToTarget(moving_plane, run_time=self.transf_run_time))
+
+            # if you want to move only the square or all the grid
+            self.play(
+                frame.animate(run_time=self.restoring_run_time).restore(),
+                MoveToTarget(moving_plane, run_time=self.transf_run_time)
+            )
         else:
             self.play(MoveToTarget(moving_plane, run_time=self.transf_run_time))
 
@@ -602,15 +606,19 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
         frame = self.camera.frame
         comment  = self.comment = TextSequence(
             [
-                r"Questo si generalizza ad esempio in \textit{{dimensione}} $2$ ",
+                r"Questo si generalizza ad esempio in \textit{dimensione} $2$ ",
                 rf"Visualizziamo $f:{self.RR}^2\to{self.RR}^2$",
-                "avere derivata significa che localmente la funzione e' lineare ",
+                "come prima essere differenziabile significa che localmente la funzione e' lineare ",
+                r"Nei punti in cui in cui lo Jacobiano non e' invertibile si ha $\det J_f = 0$",
+                r"e' l'analogo del caso 1 dimensionale",
+                r"In punti come questo le aree vengono collassate in rette o punti",
+                r"In punti come questo le aree vengono collassate in rette o punti\\ e' questo a non rendere invertibile l'\textit{operatore} di prima",
             ], font_size=self.FONT_SIZE,
         )
         comment.next()
 
         f_of_xy = Tex(
-            "f(x,y)=(x+\sin(y),y+\sin(x))",
+            "f(x,y)=(x, y - \sin(x+y))",
             font_size=self.FONT_SIZE,
             tex_to_color_map={"f": self.F_COLOR, "x": self.X_COLOR, "y": self.X_COLOR}
         ).next_to(comment.current_mob, DOWN)
@@ -631,7 +639,6 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
         )
         planes.set_height(5).arrange(RIGHT, buff=2).set_stroke(GREY_D, 1)
 
-
         # Create the plane axis labels'
         axis_labels = list(range(-xy_max, xy_max + 1))
         self.in_plane.add_coordinate_labels( axis_labels, axis_labels, font_size=16 )
@@ -650,8 +657,8 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
             AnimationGroup(
                 AnimationGroup(
                     self.comment.fade_out(),
-                    xyCopy.animate.scale(0.5).next_to(self.in_plane, UP),
-                    f_of_xy.animate.scale(0.5).next_to(self.out_plane, UP)
+                    xyCopy.animate.scale(0.7).next_to(self.in_plane, UP),
+                    f_of_xy.animate.scale(0.7).next_to(self.out_plane, UP)
                 ),
                 AnimationGroup(
                     FadeIn(self.in_plane, shift=UP),
@@ -662,7 +669,7 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
             )
         )
 
-        f = lambda x, y: (x, y - np.sin(x+y)) # (x * np.cos(y), y * np.cos(x)) # (x + np.sin(y), 2 * y + np.sin(x))
+        f = lambda x, y: (x, y - np.sin(x+y))
 
         # Get squares y-grid
         moving_plane = squares.copy()
@@ -675,22 +682,30 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
         self.apply_f_to_grid_animation(moving_plane)
         frame.save_state()
 
-        # CHOOSE A SQUARE - ZOOM - SHOW LOCAL LINEARITY - DET \NEQ 0 MEANING
-        # choosing a square in the middle
+        ### CHOOSE A SQUARE - ZOOM - SHOW LOCAL LINEARITY ###
         comment.next().to_edge(DOWN)
+        comment.target.move_to(comment.current_mob)
         self.play(comment.play())
 
+        # choosing a square in the middle
         choosen_square_index = int(grid_resolution**2 / 2 + 12)
         input_choosen_square = moving_plane[choosen_square_index]
-        output_choosen_square = moving_plane.target[choosen_square_index].set_stroke(width=5, color=BLUE, opacity=1)
-        self.apply_f_to_grid_animation(moving_plane, input_choosen_square, output_choosen_square, reset_grid_position=False)
+        choosen_square_target = moving_plane.target[choosen_square_index].set_stroke(width=5, color=BLUE, opacity=1)
+
+        # saving a square for a following animation
+        collapsing_square_index = choosen_square_index + 4
+        input_collapsing_square = moving_plane[collapsing_square_index].copy()
+
+
+        self.apply_f_to_grid_animation(moving_plane, input_choosen_square, choosen_square_target, reset_grid_position=False)
 
         ### ZOOM ON GRID ###
 
         # Zoom in on grid to show limiting behavior
         num_of_planes = 6
-        zoom_center = output_choosen_square.get_center()
+        zoom_center = choosen_square_target.get_center()
         initial_area = frame.get_width() * frame.get_height()
+        zoomed_planes = []
         zoom_run_time = 8
 
         def func(p):
@@ -706,6 +721,8 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
             plane.move_to(input_choosen_square.get_center())
             plane.set_stroke(width=2 / (2**i), color=self.F_COLOR)
             plane.apply_function(func)
+            zoomed_planes.append(plane)
+
 
             # the (i+1)-grid has to appear only after the i-grid disappeared
             def update_opacity(m : Mobject, index=i):
@@ -725,15 +742,54 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
             plane.add_updater(update_opacity)
             self.add(plane)
 
+        # actual zoom animation
         self.play(
-            FadeOut(output_choosen_square),
+            FadeOut(input_choosen_square),
             frame.animate.scale( 2**-(num_of_planes + 1), about_point=zoom_center ),
             run_time=zoom_run_time
         )
+        self.play(comment.fade_out())
         self.wait(3)
 
-        # Now show
+        # restore camera
+        self.play(frame.animate.restore(), run_time=zoom_run_time/2)
+        self.remove(*zoomed_planes)
 
+
+        self.play(comment.next_and_play())
+        self.wait()
+        self.play(comment.next_and_play())
+
+
+        ### SHOW DET \NEQ 0 MEANING ###
+        collapsing_square_label = TextSequence([r"Ad esempio, in questo quadratino\\ $\det J_f=0$"], font_size=40)
+        collapsing_square_label.next().next_to(input_collapsing_square, UR)
+
+        self.play(
+            collapsing_square_label.play(),
+            frame.animate.scale(0.5, about_point=input_collapsing_square.get_center()),
+            input_collapsing_square.animate.set_stroke(width=6, color=RED_D, opacity=1),
+            run_time=3
+        )
+        self.play(comment.fade_out())
+        comment.target.shift(2*LEFT)
+        self.play(comment.next_and_play())
+
+        input_collapsing_square.target = moving_plane.target[collapsing_square_index].set_stroke(width=6, color=RED_D, opacity=1)
+
+        self.play(
+            AnimationGroup(
+                frame.animate.restore(),
+                frame.animate
+                     .move_to(input_collapsing_square.target.get_center())
+                     .scale(0.5, about_point=input_collapsing_square.target.get_center()),
+                run_time=self.restoring_run_time, lag_ratio=1
+            ),
+            MoveToTarget(input_collapsing_square, run_time=self.transf_run_time),
+            collapsing_square_label.fade_out()
+        )
+
+        self.play(frame.animate.restore(), comment.next_and_play())
 
 class Test(Scene):
     def construct(self):
