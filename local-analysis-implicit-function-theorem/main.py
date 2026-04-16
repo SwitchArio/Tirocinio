@@ -734,7 +734,6 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
 
                 # getting the proportion for current_area in (start_a, end_a)
                 alpha = (current_area - start_a) / (end_a - start_a) if start_a != end_a else 1
-
                 alpha = max(0, min(1, alpha)) # handles (-\infty, start_a) or (end_a, \infty) cases
 
                 m.set_stroke(opacity=float(alpha))
@@ -755,16 +754,15 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
         self.play(frame.animate.restore(), run_time=zoom_run_time/2)
         self.remove(*zoomed_planes)
 
-
         self.play(comment.next_and_play())
         self.wait()
         self.play(comment.next_and_play())
-
 
         ### SHOW DET \NEQ 0 MEANING ###
         collapsing_square_label = TextSequence([r"Ad esempio, in questo quadratino\\ $\det J_f=0$"], font_size=40)
         collapsing_square_label.next().next_to(input_collapsing_square, UR)
 
+        # zoom on the collapsing square, make it fade in and write the label next to it
         self.play(
             collapsing_square_label.play(),
             frame.animate.scale(0.5, about_point=input_collapsing_square.get_center()),
@@ -772,11 +770,13 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
             run_time=3
         )
         self.play(comment.fade_out())
-        comment.target.shift(2*LEFT)
+        comment.target.shift(2*LEFT) # Adjusting the text position for a better readability
         self.play(comment.next_and_play())
 
+        # setting the target right before the movement
         input_collapsing_square.target = moving_plane.target[collapsing_square_index].set_stroke(width=6, color=RED_D, opacity=1)
 
+        # the squares moves to target and the camera follows the square
         self.play(
             AnimationGroup(
                 frame.animate.restore(),
@@ -789,6 +789,7 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
             collapsing_square_label.fade_out()
         )
 
+        # camera zooms out back to original position
         self.play(frame.animate.restore(), comment.next_and_play())
 
 class Test(Scene):
