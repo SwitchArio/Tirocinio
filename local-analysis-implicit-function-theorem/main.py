@@ -197,8 +197,7 @@ class Intro(BaseAxisSurfaceScene):
         comment.next().set_color_by_tex("intorno di $(x_0,y_0)$", ARC_COLOR)
         self.play(curve.animate.set_color(GREY_A))
         self.play(comment.play())
-        self.play(ShowCreation(arc), ShowCreation(point), hypot_func.play(), run_time=3)
-
+        self.play(ShowCreation(arc), ShowCreation(point), hypot_func.play(), curve.animate.set_stroke(opacity=0.2), run_time=3)
         comment.target.move_to(ORIGIN).to_edge(UP, buff=LARGE_BUFF).shift(RIGHT * 0.5)
         comment.next()
         self.play(comment.play())
