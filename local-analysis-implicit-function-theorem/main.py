@@ -1,11 +1,12 @@
 from manimlib import *
 from manim_slides.slide import Slide, ThreeDSlide
 
-
-
 class CommonToAll:
 
     FONT_SIZE = 30
+
+    def wait(self, duration=1.0, **kwargs):
+        self.play(Animation(Mobject(), run_time=duration), **kwargs)
 
     def get_sentence(self, texts: list[str] | str, fix=True, arrange=RIGHT, buff=SMALL_BUFF) -> Group[TexText] | TexText:
 
@@ -36,7 +37,82 @@ class CommonToAll:
 
         return final_sentence
 
-class BaseAxisSurfaceScene(CommonToAll, ThreeDSlide):
+class CommonToProblemDescription(CommonToAll):
+
+    # some costants
+    a, b, c = (0.5, 2, 1)
+    xc, yc = (2, 1)
+    alpha_start, alpha_end = (0, 0.25) # (0.05, 0.25)
+    ARC_COLOR = PINK
+
+    @staticmethod
+    def get_f(a, b, xc, yc):
+        return lambda x,y: a * (x - xc) ** 2 + b * (y - yc) ** 2
+
+    @staticmethod
+    def get_ellissoid_curve(axes, center, a, b, c, color=YELLOW) -> ParametricCurve:
+        xc, yc = center
+        curve = ParametricCurve(
+            lambda t: axes.c2p(xc + np.sqrt(c / a) * np.cos(t), yc + np.sqrt(c / b) * np.sin(t), c),
+            (-PI, PI, 0.1))
+        curve.set_stroke(width=5, opacity=1, color=color)
+        return curve
+
+    @staticmethod
+    def get_ellipses_y(x, xc, yc, a, b, c):
+        # Calcoliamo i quadrati dei "raggi" dell'ellisse
+        rx_square = c / a
+        ry_square = c / b
+
+        # Calcoliamo il termine sotto la radice
+        sqrt_term = 1 - ((x - xc) ** 2) / rx_square
+
+        # Controllo: la x si trova effettivamente all'interno dell'ellisse?
+        if sqrt_term < 0:
+            raise ValueError(f"x={x} is outside ellipses domain.")
+
+        # Calcoliamo la distanza dal centro lungo l'asse y
+        offset_y = np.sqrt(ry_square) * np.sqrt(sqrt_term)
+
+        # Restituiamo i due punti dell'ellisse per quella x (superiore e inferiore)
+        upper_y = yc + offset_y
+        lower_y = yc - offset_y
+
+        return upper_y, lower_y
+
+
+    @staticmethod
+    def get_t_from_x(x, xc, a, c):
+        """
+        Calculates the parameter t for a given x coordinate on an ellipse.
+        Returns two values of t (for the upper and lower halves).
+        """
+        # Calculate the horizontal semi-axis (radius)
+        rx = np.sqrt(c / a)
+
+        # Calculate the argument for the arccosine function
+        # x = xc + rx * cos(t)  =>  cos(t) = (x - xc) / rx
+        argument = (x - xc) / rx
+
+        # Clip the value to stay within the valid domain [-1.0, 1.0]
+        # This prevents math errors due to tiny floating-point inaccuracies
+        argument = np.clip(argument, -1.0, 1.0)
+
+        # Calculate t for the upper half of the ellipse (range: 0 to PI)
+        t_upper = np.arccos(argument)
+
+        # Calculate t for the lower half (range: -PI to 0)
+        # Since cos(t) = cos(-t), we simply negate the upper value
+        t_lower = -t_upper
+
+        return t_upper, t_lower
+
+    @staticmethod
+    def to_fixed_coord(self, point = ORIGIN, camera_center = ORIGIN, camera_scaling = 1.):
+        # doesn't condisider rotations
+        return (point-camera_center)*(1/camera_scaling)
+
+class Intro(CommonToProblemDescription, ThreeDSlide):
 
     def get_axes(
             self,
@@ -98,20 +174,6 @@ class BaseAxisSurfaceScene(CommonToAll, ThreeDSlide):
 
         return graph
 
-    def get_ellissoid_curve(self, axes, center, a, b, c) -> ParametricCurve:
-        xc, yc = center
-        curve = ParametricCurve(
-            lambda t: axes.c2p(xc + np.sqrt(c / a) * np.cos(t), yc + np.sqrt(c / b) * np.sin(t), c),
-            (-PI, PI, 0.1))
-        curve.set_stroke(width=5, opacity=1, color=YELLOW)
-        return curve
-
-class Intro(BaseAxisSurfaceScene):
-
-    def to_fixed_coord(self, point = ORIGIN, camera_center = ORIGIN, camera_scaling = 1.):
-        # doesn't condisider rotations
-        return (point-camera_center)*(1/camera_scaling)
-
     def construct(self):
         frame = self.camera.frame
 
@@ -120,9 +182,9 @@ class Intro(BaseAxisSurfaceScene):
         frame.set_euler_angles(phi=65 * DEGREES, theta=30 * DEGREES).shift(UP).scale(camera_scaling)
         axes = self.get_axes()
 
-        xc, yc = paraboloid_center = (2, 1)
-        a, b, c = (0.5, 2, 1)
-        f = lambda x, y: a * (x - xc) ** 2 + b * (y - yc) ** 2
+        xc, yc = paraboloid_center = (self.xc, self.yc)
+        a, b, c = (self.a, self.b, self.c)
+        f = self.get_f(a, b, xc, yc)
 
         paraboloid = self.get_function_graph(axes, f, opacity=0.35)
         paraboloid_mesh = SurfaceMesh(paraboloid, stroke_opacity=0.5)
@@ -145,7 +207,6 @@ class Intro(BaseAxisSurfaceScene):
         self.play(FadeOut(plane))
         shift_qty = ORIGIN - axes.c2p(0, 0, c)
 
-        self.next_slide()
         self.play(surface.animate.shift(shift_qty), curve.animate.shift(shift_qty), eq_problem.next_and_play())
         self.play(eq_problem.next_and_play())
 
@@ -154,9 +215,6 @@ class Intro(BaseAxisSurfaceScene):
         camera_center = axes.c2p(xc, yc, 0)
         camera_scaling = 0.4
         total_scaling *= camera_scaling
-
-        # camera_center = ORIGIN
-        # camera_scaling = 0
 
         self.play(
             frame.animate.set_euler_angles(phi=0, theta=0).move_to(camera_center),
@@ -184,13 +242,15 @@ class Intro(BaseAxisSurfaceScene):
         self.play(hypot_func.play())
         self.play(comment.next_and_play(), frame.animate.scale(camera_scaling))
 
-        self.next_slide() # Creating Arc in the neighborhood of (x0,y0)
+        self.next_slide()
 
-        ARC_COLOR = PINK
-        alpha_start, alpha_end = [0.05, 0.25]
+        # Creating Arc in the neighborhood of (x0,y0)
+        ARC_COLOR = self.ARC_COLOR
+        alpha_start, alpha_end = (self.alpha_start, self.alpha_end)
         arc = curve.get_subcurve(alpha_start, alpha_end).set_color(ARC_COLOR).set_stroke(width=8)
         arc_middle = curve.point_from_proportion(0.5 * (alpha_end + alpha_start) - 0.01)
         point = Dot(arc_middle, radius=0.05).set_color(ARC_COLOR)
+
         self.play(eq_problem.fade_out(), comment.fade_out(), hypot_func.fade_out())
         hypot_func.next().set_color(ARC_COLOR).next_to(self.to_fixed_coord(point.get_center(), camera_center, total_scaling), UR)
 
@@ -201,6 +261,7 @@ class Intro(BaseAxisSurfaceScene):
         comment.target.move_to(ORIGIN).to_edge(UP, buff=LARGE_BUFF).shift(RIGHT * 0.5)
         comment.next()
         self.play(comment.play())
+        self.wait(3)
 
         comment.next()[52:60].set_color(ARC_COLOR)
         self.play(comment.play())
@@ -304,6 +365,8 @@ class DerivativeMeaning(CommonToDerivative, Slide):
             localAxes.animate(run_time=zoom_run_time).set_stroke(width=5)
         )
 
+        self.next_slide()
+
         # Show small changes in x and y
         braces_scaling = 0.011
         text_buff = 0.002
@@ -346,7 +409,6 @@ class DerivativeMeaning(CommonToDerivative, Slide):
 
         self.play(comment.next_and_play())
         self.wait(2)
-        # der_f = Tex("{f'(x)}").next_to(equation.current_mob, RIGHT, buff=SMALL_BUFF)
 
         self.play(equation.next_and_play())
         self.wait(2)
@@ -357,61 +419,6 @@ class DerivativeMeaning(CommonToDerivative, Slide):
         frame.restore()
 
         return
-        # Zoom back out to see the graph
-        self.play(
-            *map(FadeOut, [localAxes, brace_x, brace_fx, delta_x, delta_fx]),
-            comment.fade_out(), frame.animate(run_time=zoom_run_time).restore()
-        )
-
-        self.wait(0.5)
-        self.play(*map(FadeOut, [axes.get_y_axis(), curve]), axes.coordinate_labels[0][x_range[1]].animate.set_opacity(1))
-
-
-        return
-        # View the function as a transformation
-        input_space = axes.get_x_axis()
-        input_space[1].set_color(YELLOW)
-        n = 250
-        x_min = 0
-        x_max = 3
-        dots = VGroup(*[
-            Dot(radius=0.001)
-                      .move_to(input_space.n2p(x_min + (i / (n - 1)) * (x_max - x_min)))
-                      .set_color(interpolate_color(YELLOW_E, YELLOW_A, i / n))
-                      .set_stroke(width=10)
-            for i in range(n)
-        ])
-        self.play(AnimationGroup(*[FadeIn(dot, shift=DOWN) for dot in dots], lag_ratio=0.003))
-
-        input_space_group = Group(input_space, dots)
-        input_space_group.generate_target()
-        output_space = input_space.copy()
-        f_of_x_label = Tex("f(x)").set_color(PINK)
-        f_of_x_label.set_height(
-            input_space[1].get_height() / f_of_x_label[1].get_height()
-        ).match_y(
-            output_space[1]
-        ).align_to(
-            output_space[1], LEFT
-        )
-        output_space[1].become(f_of_x_label)
-        Group(input_space_group.target, output_space).arrange(RIGHT, buff=0.7).set_width(FRAME_WIDTH * 0.98)
-
-
-        input_space_text = TexText("Input Space", font_size=60).next_to(input_space_group.target[0], DOWN, buff=0.5).set_color(YELLOW)
-        output_space_text = TexText("Output Space", font_size=60).next_to(output_space, DOWN, buff=0.5).set_color(PINK)
-        equation.clear_updaters()
-        equation.generate_target()
-        equation.target.set_x(0).to_edge(DOWN, buff=0.7)
-        equation.target[-len(msg):].next_to(equation.target[:-len(msg)], RIGHT, buff=0.25)
-        self.play(
-            f_of_x.animate.match_x(output_space).set_color(WHITE).set_color_by_tex_to_color_map({"f": PINK, "x": YELLOW}),
-            MoveToTarget(equation, run_time=2),
-            AnimationGroup(
-                MoveToTarget(input_space_group),
-                FadeIn(output_space, shift=LEFT * 0.5),
-                FadeIn(VGroup(input_space_text, output_space_text), shift=UP * 0.4), lag_ratio=0.5),
-        )
 
 class InvertibleDerivative(CommonToDerivative, Slide):
     def construct(self):
@@ -504,6 +511,7 @@ class InvertibleDerivative(CommonToDerivative, Slide):
             output_space[1].animate.set_color(self.F_COLOR),
             AnimationGroup(*[dots_copy[i].animate.become(y_dots[i]) for i in range(n) ], lag_ratio=self.IO_DOT_ANIM_LAG_RATIO),
         )
+        self.next_slide()
 
         y_dots = dots_copy
         choosen_dot = y_dots[choosen_one_index].copy() # copy the choosen one
@@ -518,6 +526,7 @@ class InvertibleDerivative(CommonToDerivative, Slide):
 
         # show iniettivity
         self.play(choosen_dot.animate.become(dots[choosen_one_index]), comment.next_and_play())
+        self.wait()
         self.play(comment.next_and_play())
         self.play(comment.fade_out(), FadeOut(choosen_dot))
 
@@ -530,6 +539,7 @@ class InvertibleDerivative(CommonToDerivative, Slide):
 
         # shift x-dots to curve
         self.play(curve.animate.become(new_curve), comment.next_and_play())
+        self.next_slide()
         self.play(show_dots_animation)
         self.play(get_shift_to_curve_anim(new_curve, dots_copy))
 
@@ -551,6 +561,7 @@ class InvertibleDerivative(CommonToDerivative, Slide):
         self.play(comment.fade_out(), *[FadeOut(mob) for mob in self.mobjects])
         comment.target.move_to(ORIGIN)
         self.play(comment.next_and_play())
+        self.play(comment.fade_out())
 
 class InvertibilityGeneralization(CommonToDerivative, Slide):
     in_plane : Axes = None
@@ -611,7 +622,7 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
                 r"Nei punti in cui in cui lo Jacobiano non e' invertibile si ha $\det J_f = 0$",
                 r"e' l'analogo del caso 1 dimensionale",
                 r"In punti come questo le aree vengono collassate in rette o punti",
-                r"In punti come questo le aree vengono collassate in rette o punti\\ e' questo a non rendere invertibile l'\textit{operatore} di prima",
+                r"In punti come questo le aree vengono collassate in rette o punti\\ e' questo a non rendere invertibile l'\textit{operatore} citato prima",
             ], font_size=self.FONT_SIZE,
         )
         comment.next()
@@ -680,6 +691,8 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
         # Apply-f-to-grid Animation, 1st time
         self.apply_f_to_grid_animation(moving_plane)
         frame.save_state()
+
+        self.next_slide()
 
         ### CHOOSE A SQUARE - ZOOM - SHOW LOCAL LINEARITY ###
         comment.next().to_edge(DOWN)
@@ -761,6 +774,7 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
         collapsing_square_label = TextSequence([r"Ad esempio, in questo quadratino\\ $\det J_f=0$"], font_size=40)
         collapsing_square_label.next().next_to(input_collapsing_square, UR)
 
+        self.next_slide()
         # zoom on the collapsing square, make it fade in and write the label next to it
         self.play(
             collapsing_square_label.play(),
@@ -790,6 +804,224 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
 
         # camera zooms out back to original position
         self.play(frame.animate.restore(), comment.next_and_play())
+
+class CommonToContractions(CommonToAll):
+
+    def get_axes(
+            self,
+            x_range=(-3, 3), y_range=(-3, 3),
+            width=5,
+            color=GREY,
+            center=ORIGIN,
+            show_numbers=True,
+    ) -> Axes:
+        axes = Axes(x_range=x_range, y_range=y_range).set_stroke(width=width, color=color).shift(center - ORIGIN)
+
+        x, y = axis_labels = VGroup(Tex("x", font_size=25), Tex("y", font_size=25))
+        x.next_to(axes.x_axis, RIGHT)
+        axes.x_axis.add(x)
+        y.next_to(axes.y_axis, UP)
+        axes.y_axis.add(y)
+        axes.add(axis_labels)
+
+        if show_numbers:
+            axes.add_coordinate_labels(font_size=18, excluding=[])
+            axes.coordinate_labels[0][x_range[1]].set_opacity(0)
+            axes.coordinate_labels[1][y_range[1]].set_opacity(0)
+        return axes
+
+    def get_curve(self, axes, f, t_range=(-3, 3, 0.1), width = 8, color=BLUE):
+        return ParametricCurve(
+            lambda t: (axes.c2p(t, f(t))), t_range=t_range
+        ).set_stroke(width=width, color=color, opacity=0.7)
+
+class WhatsAContraction(CommonToContractions, CommonToProblemDescription, Slide):
+    def construct(self):
+        frame = self.camera.frame
+        comment = TextSequence(
+            [
+                r"Ora che abbiamo capito la natura di $\displaystyle\frac{\partial f}{\partial y}\neq 0$",
+                r"Ora che abbiamo capito la natura di $\displaystyle\frac{\partial f}{\partial y}\neq 0$\\"
+                "cerchiamo di capire perche' e' fondamentale",
+                "Tracciamo l'approssimazione lineare in $(x_0,y_0)$",
+                # r"L'ipotesi ci garantisce che non ci troviamo in questa situazionex",
+            ],
+            font_size=35
+        )
+        axes = self.get_axes(show_numbers=False) #self.get_axes(center=LEFT)
+
+        xc, yc = paraboloid_center = (self.xc, self.yc)
+        a, b, c = (self.a, self.b, self.c)
+        f = self.get_f(a, b, xc, yc)
+        nabla_f = lambda x, y: ((f(x+0.001, y)-f(x, y))/0.001, (f(x, y+0.001)-f(x, y))/0.001)
+        curve = self.get_ellissoid_curve(axes, paraboloid_center, a, b, c, WHITE)
+        alpha_start, alpha_end = (self.alpha_start, self.alpha_end)
+
+        arc = curve.get_subcurve(alpha_start, alpha_end).set_color(self.ARC_COLOR).set_stroke(width=3)
+
+        middle_alpha = 0.5 * (alpha_end + alpha_start) - 0.01
+        arc_middle = curve.point_from_proportion(middle_alpha)
+
+        ZOOMED_RADIUS = 0.015
+        point = Dot(arc_middle, radius=ZOOMED_RADIUS).set_color(self.ARC_COLOR)
+        curve.set_stroke(opacity=0.15) # shadowing the main curve
+
+        self.play(comment.next_and_play())
+        self.wait(2)
+        self.play(comment.next_and_play())
+        self.wait(2)
+        self.play(comment.fade_out())
+        self.play(ShowCreation(axes))
+        self.play(ShowCreation(curve), ShowCreation(arc))
+
+        x0,y0 = axes.p2c(arc_middle)
+        px0, py0 = nabla_f(x0,y0)
+
+        scaling = 0.2
+        total_scaling = scaling
+        self.play(frame.animate.move_to(arc_middle).scale(scaling), FadeIn(point), FadeOut(curve))
+        self.play(point.animate.set_color(WHITE), arc.animate.set_color(WHITE), )
+
+        x0_point = axes.c2p(x0, 0)
+        y0_point = axes.c2p(0, y0)
+
+        x0_dashed_line = DashedLine(arc_middle, x0_point, dash_length=0.02, stroke_opacity=0.5)
+        y0_dashed_line = DashedLine(arc_middle, y0_point, dash_length=0.02, stroke_opacity=0.5)
+
+        x_axis_dot = Dot(x0_point, radius=ZOOMED_RADIUS)
+        y_axis_dot = Dot(y0_point, radius=ZOOMED_RADIUS)
+
+        x0_label, y0_label = [Tex(text, font_size=30).scale(total_scaling) for text in ["x_0", "y_0"]]
+        x0_label.next_to(x0_point, DOWN*total_scaling), y0_label.next_to(y0_point, LEFT*total_scaling)
+
+        self.play(
+            AnimationGroup(ShowCreation(x0_dashed_line), FadeIn(x_axis_dot), lag_ratio=0.5),
+            AnimationGroup(ShowCreation(y0_dashed_line), FadeIn(y_axis_dot), lag_ratio=0.5),
+        )
+        self.play(Write(x0_label), Write(y0_label))
+
+        TO_FIND_COLOR = RED_E
+        RHO_COLOR = BLUE
+
+        y2find_point = curve.point_from_proportion(middle_alpha-0.08)
+        y2find_dot = Dot(y2find_point, radius=ZOOMED_RADIUS, fill_color=TO_FIND_COLOR)
+
+        y2find_label = Tex("y", font_size=30).scale(total_scaling).set_color(TO_FIND_COLOR).next_to(y2find_dot, (DOWN*0.5+LEFT*0.1)*total_scaling)
+        x2find, y2find, *_ = axes.p2c(y2find_point)
+
+        rho = ValueTracker(-0.5)
+        guess = x0 + rho.get_value()
+        guess_point = axes.c2p(guess, 0)
+
+        rho_line = always_redraw(
+            lambda: Line(x0_point,  axes.c2p(x0 + rho.get_value()), color=RHO_COLOR)
+        )
+
+        guess_dot = Dot(guess_point, radius=ZOOMED_RADIUS, fill_color=RHO_COLOR)
+        guess_dot.add_updater( lambda m: m.move_to(rho_line.get_end()) )
+
+        guess_label = Tex(r"x_1 = x_0+\rho", font_size=30).scale(total_scaling).set_color(RHO_COLOR).next_to(guess_dot, DOWN*total_scaling)
+        guess_label.add_updater( lambda m: m.next_to(guess_dot, DOWN*total_scaling) )
+
+        self.play(FadeIn(y2find_dot), Write(y2find_label))
+
+        self.play(FadeIn(guess_dot), ShowCreation(rho_line), Write(guess_label))
+
+        ellipsis_lower_t = self.get_t_from_x(guess, self.xc, self.a, self.c)[1]
+        appr_x, appr_y, _ = approx_point = curve.get_point_from_function(ellipsis_lower_t)
+        approx_dot = Dot(approx_point, radius=ZOOMED_RADIUS, fill_color=RHO_COLOR)
+        approx_x_line = always_redraw(DashedLine, guess_point, approx_point, color=RHO_COLOR, dash_length=0.02, stroke_opacity=0.5)
+        approx_label = Tex(r"y_1", font_size=30).scale(total_scaling).set_color(RHO_COLOR).next_to(approx_point, UL*0.5*total_scaling)
+        approx_label.add_updater( lambda m: m.next_to(approx_point, UL*0.5*total_scaling) )
+
+        self.play(
+            FadeIn(approx_dot),
+            ShowCreation(approx_x_line, suspend_mobject_updating=True),
+            Write(approx_label)
+        )
+
+
+        dy_line_end = axes.c2p(appr_x, y2find)
+        dy_line = Line(approx_point, dy_line_end, color=PINK)
+        brace_y = Brace(dy_line, LEFT, buff=0.02, font_size=30).set_color(PINK).stretch(total_scaling, dim=0, about_edge=RIGHT)
+        brace_y_label = Tex(r"\Delta y", font_size=30).scale(total_scaling).set_color(PINK).next_to(brace_y, LEFT*0.5*total_scaling)
+
+        approx_dot.set_z_index(1)
+        self.play( FadeIn(dy_line), Write(brace_y), Write(brace_y_label))
+
+        f_tan = lambda t: -px0/py0 * (t-x0) + y0
+        range_delta = 0.4
+        tangent = self.get_curve(axes, f_tan, width = 3, color=WHITE, t_range=(x0-range_delta, x0+range_delta, 0.1)).set_stroke(opacity=0.5)
+        self.bring_to_back(tangent)
+        self.play(ShowCreation(tangent))
+
+
+        t_from_proportion = lambda x: (x - x0)/(2*range_delta) + 0.5
+        self.play(tangent.animate.match_y(dy_line))
+        intersection_point = tangent.point_from_proportion(t_from_proportion(dy_line.get_length()/2 * -py0/px0 + x0))
+        shift_to_right = intersection_point - dy_line.get_start()
+        self.play(
+            AnimationGroup(
+                dy_line.animate.move_to(intersection_point, aligned_edge=UP),
+                AnimationGroup(
+                    brace_y.animate.shift(shift_to_right),
+                    brace_y_label.animate.shift(shift_to_right)
+                ),
+                lag_ratio=0.4
+            )
+        )
+
+
+        second_intersection_point = tangent.point_from_proportion(t_from_proportion(dy_line.get_length()/2 * py0/px0 + x0))
+
+        temp_line = Line(intersection_point, second_intersection_point, color=PINK)
+        temp_dashed_line = DashedLine(dy_line.get_end(), second_intersection_point, dash_length=0.02, stroke_opacity=0.5, color=PINK)
+        dy_line_copy = dy_line.copy()
+        self.play(
+            AnimationGroup(
+                dy_line_copy.animate.become(temp_line),
+                ShowCreation(temp_dashed_line),
+                lag_ratio=0.1
+            )
+        )
+
+        temp_line = dy_line_copy
+        end_dx_line = axes.c2p(second_intersection_point[0], intersection_point[1])
+        dx_line = Line(intersection_point, end_dx_line, color=YELLOW)
+
+        temp_dashed_line2 = DashedLine(second_intersection_point, end_dx_line,  dash_length=0.02, stroke_opacity=0.5, color=YELLOW)
+
+
+        self.play(
+            AnimationGroup(
+                temp_line.animate.become(dx_line),
+                ShowCreation(temp_dashed_line2),
+                lag_ratio=0.1
+            )
+        )
+
+        dx_line = temp_line
+        brace_x = Brace(dx_line, UP, buff=0.02, font_size=30).set_color(YELLOW).stretch(total_scaling, dim=1, about_edge=DOWN)
+        brace_x_label = Tex(r"\Delta x", font_size=30).scale(total_scaling).set_color(YELLOW).next_to(brace_x, UP*0.5*total_scaling)
+
+        self.play(
+            ReplacementTransform(brace_y_label, brace_x_label),
+            ReplacementTransform(brace_y, brace_x)
+        )
+        self.play(*map(FadeOut, [temp_dashed_line, temp_dashed_line2, dy_line, tangent, brace_x]))
+
+        delta_x = Group(dx_line, brace_x_label)
+
+        self.play(delta_x.animate.shift(guess_point-dx_line.get_start()).arrange(UP * total_scaling, center=False))
+
+        new_label = Tex(r"x_2", font_size=30).scale(total_scaling).set_color(RHO_COLOR).next_to(guess_dot, DOWN*total_scaling)
+        new_label.add_updater( lambda m: m.next_to(guess_dot, DOWN*total_scaling) )
+        self.play(
+            ReplacementTransform(guess_label, new_label),
+            rho.animate.increment_value(dx_line.get_length()),
+            *map(FadeOut,[approx_dot, approx_label, approx_x_line, delta_x])
+        )
+
 
 class Test(Scene):
     def construct(self):
@@ -944,6 +1176,12 @@ class TextSequence:
 # manim-slides convert Intro slides.html -cwidth=1920 -cheight=1080 --open
 # manim-slides convert Intro slides.html -cwidth=1920 -cheight=1080 -cmargin=0 -cmin_scale=1 -cmax_scale=1 --open
 # manimgl main.py Intro -w --hd
+
+### CURRENT COMMANDS to ALL
+"""
+manimgl main.py Intro DerivativeMeaning InvertibleDerivative InvertibilityGeneralization -w --hd
+manim-slides convert Intro DerivativeMeaning InvertibleDerivative InvertibilityGeneralization Slides.html --open
+"""
 
 # manim-slides Intro
 # manim-slides render --GL main.py Intro
