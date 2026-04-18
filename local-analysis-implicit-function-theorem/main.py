@@ -963,8 +963,13 @@ class WhatsAContraction(CommonToContractions, CommonToProblemDescription, Slide)
 
 
         ### we use tangent (first derivative) to approximate dx, here is the animation
-        # dy_line -> temp_line -> dx_line
+        
+        # we show the tangent, and move it where is easier (less messy) too see, to the same height of dy_line center
+        self.bring_to_back(tangent)
+        self.play(ShowCreation(tangent))
+        self.play(tangent.animate.match_y(dy_line))
 
+        # dy_line -> temp_line -> dx_line
         # calculating where the dy_line edges will have to move when transforming dy_line -> temp_line
         intersection_point_1st = tangent.point_from_proportion(t_from_proportion(f_tan_inverse(y0 + dy_line.get_length()/2)))
         intersection_point_2nd = tangent.point_from_proportion(t_from_proportion(f_tan_inverse(y0 - dy_line.get_length()/2 )))
