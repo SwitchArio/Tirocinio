@@ -82,7 +82,7 @@ class CommonToProblemDescription(CommonToAll):
 
 
     @staticmethod
-    def get_t_from_x(x, xc, a, c):
+    def get_t_from_ellipsis_x(x, xc, a, c):
         """
         Calculates the parameter t for a given x coordinate on an ellipse.
         Returns two values of t (for the upper and lower halves).
@@ -882,11 +882,18 @@ class WhatsAContraction(CommonToContractions, CommonToProblemDescription, Slide)
         self.play(frame.animate.move_to(arc_middle).scale(scaling), FadeIn(point), FadeOut(curve))
         self.play(point.animate.set_color(WHITE), arc.animate.set_color(WHITE), )
 
+        ### SETTING UP FOR ITERATING
+
+        TO_FIND_COLOR = RED_E
+        RHO_COLOR = BLUE
+        F_COLOR = PINK
+        X_COLOR = YELLOW
+        dash_len = 0.02
+        line_opacity = 0.5
+
+        # getting x0,y0 point, dot, label and dashed_line
         x0_point = axes.c2p(x0, 0)
         y0_point = axes.c2p(0, y0)
-
-        x0_dashed_line = DashedLine(arc_middle, x0_point, dash_length=0.02, stroke_opacity=0.5)
-        y0_dashed_line = DashedLine(arc_middle, y0_point, dash_length=0.02, stroke_opacity=0.5)
 
         x_axis_dot = Dot(x0_point, radius=ZOOMED_RADIUS)
         y_axis_dot = Dot(y0_point, radius=ZOOMED_RADIUS)
@@ -894,132 +901,125 @@ class WhatsAContraction(CommonToContractions, CommonToProblemDescription, Slide)
         x0_label, y0_label = [Tex(text, font_size=30).scale(total_scaling) for text in ["x_0", "y_0"]]
         x0_label.next_to(x0_point, DOWN*total_scaling), y0_label.next_to(y0_point, LEFT*total_scaling)
 
+        x0_dashed_line = DashedLine(arc_middle, x0_point, dash_length=dash_len, stroke_opacity=line_opacity)
+        y0_dashed_line = DashedLine(arc_middle, y0_point, dash_length=dash_len, stroke_opacity=line_opacity)
+
+        # animating x0,y0 dot, line and label creation
         self.play(
             AnimationGroup(ShowCreation(x0_dashed_line), FadeIn(x_axis_dot), lag_ratio=0.5),
             AnimationGroup(ShowCreation(y0_dashed_line), FadeIn(y_axis_dot), lag_ratio=0.5),
         )
         self.play(Write(x0_label), Write(y0_label))
 
-        TO_FIND_COLOR = RED_E
-        RHO_COLOR = BLUE
+        # getting the target y of the algorithm (point, dot, label and x,y values)
+        target_y_point = curve.point_from_proportion(middle_alpha-0.08)
+        target_y_dot = Dot(target_y_point, radius=ZOOMED_RADIUS, fill_color=TO_FIND_COLOR)
+        target_y_label = Tex("y", font_size=30).scale(total_scaling).set_color(TO_FIND_COLOR).next_to(target_y_dot, (DOWN*0.5+LEFT*0.1)*total_scaling)
+        x_target, y_target, *_ = axes.p2c(target_y_point)
 
-        y2find_point = curve.point_from_proportion(middle_alpha-0.08)
-        y2find_dot = Dot(y2find_point, radius=ZOOMED_RADIUS, fill_color=TO_FIND_COLOR)
+        self.play(FadeIn(target_y_dot), Write(target_y_label))
 
-        y2find_label = Tex("y", font_size=30).scale(total_scaling).set_color(TO_FIND_COLOR).next_to(y2find_dot, (DOWN*0.5+LEFT*0.1)*total_scaling)
-        x2find, y2find, *_ = axes.p2c(y2find_point)
+        # calculating rangent
+        range_delta = 0.4
+        f_tan = lambda t: -px0/py0 * (t-x0) + y0 # tangent equation
+        f_tan_inverse = lambda y: - (y - y0) * py0/px0 +x0 # the inverse function
+        t_from_proportion = lambda x: (x - x0)/(2*range_delta) + 0.5 # proportion for x in (x0-\delta, x0+\delta)
+        tangent = self.get_curve(axes, f_tan, width = 3, color=WHITE, t_range=(x0-range_delta, x0+range_delta, 0.1)).set_stroke(opacity=line_opacity)
+
+
+        ### BEGINS FIRST ITERATION ###
 
         rho = ValueTracker(-0.5)
         guess = x0 + rho.get_value()
         guess_point = axes.c2p(guess, 0)
 
-        rho_line = always_redraw(
-            lambda: Line(x0_point,  axes.c2p(x0 + rho.get_value()), color=RHO_COLOR)
-        )
+        # that's the line with rho length from x0 to the current guess
+        rho_line = always_redraw( lambda: Line(x0_point,  axes.c2p(x0 + rho.get_value()), color=RHO_COLOR) )
 
+        # creating guess dot and label
         guess_dot = Dot(guess_point, radius=ZOOMED_RADIUS, fill_color=RHO_COLOR)
         guess_dot.add_updater( lambda m: m.move_to(rho_line.get_end()) )
 
         guess_label = Tex(r"x_1 = x_0+\rho", font_size=30).scale(total_scaling).set_color(RHO_COLOR).next_to(guess_dot, DOWN*total_scaling)
         guess_label.add_updater( lambda m: m.next_to(guess_dot, DOWN*total_scaling) )
 
-        self.play(FadeIn(y2find_dot), Write(y2find_label))
+        # calulating y1 (getting dot, dashed line and label)
+        new_y_point = curve.get_point_from_function(self.get_t_from_ellipsis_x(guess, self.xc, self.a, self.c)[1])
+        new_y_dot = Dot(new_y_point, radius=ZOOMED_RADIUS, fill_color=RHO_COLOR).set_z_index(1)
+        new_y_vertical_line = always_redraw(DashedLine, guess_point, new_y_point, color=RHO_COLOR, dash_length=dash_len, stroke_opacity=line_opacity)
+        new_y_label = Tex(r"y_1", font_size=30).scale(total_scaling).set_color(RHO_COLOR).next_to(new_y_point, UL*0.5*total_scaling)
+        new_y_label.add_updater( lambda m: m.next_to(new_y_point, UL*0.5*total_scaling) )
 
+        # calculating dy as dy = y1 - y0 (getting line, brace and label)
+        dy_line_end = axes.c2p(new_y_point[0], y_target)
+        dy_line = Line(new_y_point, dy_line_end, color=F_COLOR)
+        brace_y = Brace(dy_line, LEFT, buff=0.02, font_size=30).set_color(F_COLOR).stretch(total_scaling, dim=0, about_edge=RIGHT)
+        brace_y_label = Tex(r"\Delta y", font_size=30).scale(total_scaling).set_color(F_COLOR).next_to(brace_y, LEFT*0.5*total_scaling)
+
+        # show: guess -> the corrisponding y -> the error dy
         self.play(FadeIn(guess_dot), ShowCreation(rho_line), Write(guess_label))
-
-        ellipsis_lower_t = self.get_t_from_x(guess, self.xc, self.a, self.c)[1]
-        appr_x, appr_y, _ = approx_point = curve.get_point_from_function(ellipsis_lower_t)
-        approx_dot = Dot(approx_point, radius=ZOOMED_RADIUS, fill_color=RHO_COLOR)
-        approx_x_line = always_redraw(DashedLine, guess_point, approx_point, color=RHO_COLOR, dash_length=0.02, stroke_opacity=0.5)
-        approx_label = Tex(r"y_1", font_size=30).scale(total_scaling).set_color(RHO_COLOR).next_to(approx_point, UL*0.5*total_scaling)
-        approx_label.add_updater( lambda m: m.next_to(approx_point, UL*0.5*total_scaling) )
-
-        self.play(
-            FadeIn(approx_dot),
-            ShowCreation(approx_x_line, suspend_mobject_updating=True),
-            Write(approx_label)
-        )
+        self.play(FadeIn(new_y_dot), ShowCreation(new_y_vertical_line, suspend_mobject_updating=True), Write(new_y_label) )
+        self.play(FadeIn(dy_line), Write(brace_y), Write(brace_y_label))
 
 
-        dy_line_end = axes.c2p(appr_x, y2find)
-        dy_line = Line(approx_point, dy_line_end, color=PINK)
-        brace_y = Brace(dy_line, LEFT, buff=0.02, font_size=30).set_color(PINK).stretch(total_scaling, dim=0, about_edge=RIGHT)
-        brace_y_label = Tex(r"\Delta y", font_size=30).scale(total_scaling).set_color(PINK).next_to(brace_y, LEFT*0.5*total_scaling)
+        ### we use tangent (first derivative) to approximate dx, here is the animation
+        # dy_line -> temp_line -> dx_line
 
-        approx_dot.set_z_index(1)
-        self.play( FadeIn(dy_line), Write(brace_y), Write(brace_y_label))
+        # calculating where the dy_line edges will have to move when transforming dy_line -> temp_line
+        intersection_point_1st = tangent.point_from_proportion(t_from_proportion(f_tan_inverse(y0 + dy_line.get_length()/2)))
+        intersection_point_2nd = tangent.point_from_proportion(t_from_proportion(f_tan_inverse(y0 - dy_line.get_length()/2 )))
 
-        f_tan = lambda t: -px0/py0 * (t-x0) + y0
-        range_delta = 0.4
-        tangent = self.get_curve(axes, f_tan, width = 3, color=WHITE, t_range=(x0-range_delta, x0+range_delta, 0.1)).set_stroke(opacity=0.5)
+        # calculating how much the dy_line will have to shift to meet tangent
+        shift_to_right = intersection_point_1st - dy_line.get_start()
+
+        # calculating final line and final line endpoint
+        dx_line_endpoint = axes.c2p(intersection_point_2nd[0], intersection_point_1st[1])
+        dx_line = Line(intersection_point_1st, dx_line_endpoint, color=X_COLOR)
+        temp_dashed_line2 = DashedLine(intersection_point_2nd, dx_line_endpoint,  dash_length=dash_len, stroke_opacity=line_opacity, color=X_COLOR)
+
+        # Animations
+        # we show the tangent, and move it where is easier (less messy) too see, to the same height of dy_line center
         self.bring_to_back(tangent)
         self.play(ShowCreation(tangent))
-
-
-        t_from_proportion = lambda x: (x - x0)/(2*range_delta) + 0.5
         self.play(tangent.animate.match_y(dy_line))
-        intersection_point = tangent.point_from_proportion(t_from_proportion(dy_line.get_length()/2 * -py0/px0 + x0))
-        shift_to_right = intersection_point - dy_line.get_start()
-        self.play(
-            AnimationGroup(
-                dy_line.animate.move_to(intersection_point, aligned_edge=UP),
-                AnimationGroup(
-                    brace_y.animate.shift(shift_to_right),
-                    brace_y_label.animate.shift(shift_to_right)
-                ),
-                lag_ratio=0.4
-            )
-        )
 
+        # shift dy_line animation
+        self.play(AnimationGroup(
+            dy_line.animate.move_to(intersection_point_1st, aligned_edge=UP),
+            AnimationGroup(brace_y.animate.shift(shift_to_right), brace_y_label.animate.shift(shift_to_right)),
+            lag_ratio=0.4
+        ))
 
-        second_intersection_point = tangent.point_from_proportion(t_from_proportion(dy_line.get_length()/2 * py0/px0 + x0))
+        # setting up transform animation, we use a temporary variable/line and use dashed line to emphasize
+        temp_line = Line(intersection_point_1st, intersection_point_2nd, color=F_COLOR)
+        temp_dashed_line = DashedLine(dy_line.get_end(), intersection_point_2nd, dash_length=dash_len, stroke_opacity=line_opacity, color=F_COLOR)
 
-        temp_line = Line(intersection_point, second_intersection_point, color=PINK)
-        temp_dashed_line = DashedLine(dy_line.get_end(), second_intersection_point, dash_length=0.02, stroke_opacity=0.5, color=PINK)
+        # actual animation: dy_line_copy -> temp_line
         dy_line_copy = dy_line.copy()
-        self.play(
-            AnimationGroup(
-                dy_line_copy.animate.become(temp_line),
-                ShowCreation(temp_dashed_line),
-                lag_ratio=0.1
-            )
-        )
-
+        self.play(AnimationGroup(dy_line_copy.animate.become(temp_line), ShowCreation(temp_dashed_line), lag_ratio=0.1))
         temp_line = dy_line_copy
-        end_dx_line = axes.c2p(second_intersection_point[0], intersection_point[1])
-        dx_line = Line(intersection_point, end_dx_line, color=YELLOW)
 
-        temp_dashed_line2 = DashedLine(second_intersection_point, end_dx_line,  dash_length=0.02, stroke_opacity=0.5, color=YELLOW)
-
-
-        self.play(
-            AnimationGroup(
-                temp_line.animate.become(dx_line),
-                ShowCreation(temp_dashed_line2),
-                lag_ratio=0.1
-            )
-        )
-
+        # temp_line -> dx_line
+        self.play(AnimationGroup(temp_line.animate.become(dx_line), ShowCreation(temp_dashed_line2), lag_ratio=0.1))
         dx_line = temp_line
-        brace_x = Brace(dx_line, UP, buff=0.02, font_size=30).set_color(YELLOW).stretch(total_scaling, dim=1, about_edge=DOWN)
-        brace_x_label = Tex(r"\Delta x", font_size=30).scale(total_scaling).set_color(YELLOW).next_to(brace_x, UP*0.5*total_scaling)
 
-        self.play(
-            ReplacementTransform(brace_y_label, brace_x_label),
-            ReplacementTransform(brace_y, brace_x)
-        )
+        # Creating + Animating brace and label for dx_line
+        brace_x = Brace(dx_line, UP, buff=0.02, font_size=30).set_color(X_COLOR).stretch(total_scaling, dim=1, about_edge=DOWN)
+        brace_x_label = Tex(r"\Delta x", font_size=30).scale(total_scaling).set_color(X_COLOR).next_to(brace_x, UP*0.5*total_scaling)
+        self.play(ReplacementTransform(brace_y_label, brace_x_label), ReplacementTransform(brace_y, brace_x))
         self.play(*map(FadeOut, [temp_dashed_line, temp_dashed_line2, dy_line, tangent, brace_x]))
 
+        # moving dx_line to x-axis to show correction
         delta_x = Group(dx_line, brace_x_label)
-
         self.play(delta_x.animate.shift(guess_point-dx_line.get_start()).arrange(UP * total_scaling, center=False))
 
+        # setting new iteration
         new_label = Tex(r"x_2", font_size=30).scale(total_scaling).set_color(RHO_COLOR).next_to(guess_dot, DOWN*total_scaling)
         new_label.add_updater( lambda m: m.next_to(guess_dot, DOWN*total_scaling) )
         self.play(
             ReplacementTransform(guess_label, new_label),
             rho.animate.increment_value(dx_line.get_length()),
-            *map(FadeOut,[approx_dot, approx_label, approx_x_line, delta_x])
+            *map(FadeOut,[new_y_dot, new_y_label, new_y_vertical_line, delta_x])
         )
 
 
