@@ -9,35 +9,6 @@ class CommonToAll:
     def wait(self, duration=1.0, **kwargs):
         self.play(Animation(Mobject(), run_time=duration), **kwargs)
 
-    def get_sentence(self, texts: list[str] | str, fix=True, arrange=RIGHT, buff=SMALL_BUFF) -> Group[TexText] | TexText:
-
-        texts = [texts] if isinstance(texts, str) else texts  # check and adjusts depening on how many strings
-        texts_mobj = [TexText(text, font_size=self.FONT_SIZE) for text in texts]
-
-        if len(texts_mobj) > 1:
-            frase = Group(*texts_mobj)
-            frase.arrange(arrange, buff=buff)
-        else:
-            frase = texts_mobj[0]
-        if fix: frase.fix_in_frame()
-
-        return frase
-
-    def get_comb_sentences(self, sentences: list, fix=True, arrange=DOWN, buff=SMALL_BUFF) -> Group[TexText | Group[TexText]]:
-        final_sentence = Group()
-
-        for mob in sentences:
-            if isinstance(mob, list):
-                final_sentence.add(self.get_sentence(mob))
-                continue
-
-            final_sentence.add(mob)
-
-        if fix: final_sentence.fix_in_frame()
-        final_sentence.arrange(arrange, buff=buff)
-
-        return final_sentence
-
 class CommonToProblemDescription(CommonToAll):
 
     # some costants
