@@ -152,50 +152,56 @@ class Intro(CommonToProblemDescription, ThreeDSlide):
     def construct(self):
         frame = self.camera.frame
 
+        # setting up axes and some costants
         camera_scaling = 1.3
         total_scaling = camera_scaling
         frame.set_euler_angles(phi=65 * DEGREES, theta=30 * DEGREES).shift(UP).scale(camera_scaling)
         axes = self.get_axes()
 
+        # setting up the paraboloid parameters and creating
         xc, yc = paraboloid_center = (self.xc, self.yc)
         a, b, c = (self.a, self.b, self.c)
         f = self.get_f(a, b, xc, yc)
-
         paraboloid = self.get_function_graph(axes, f, opacity=0.35)
         paraboloid_mesh = SurfaceMesh(paraboloid, stroke_opacity=0.5)
         surface = Group(paraboloid_mesh, paraboloid)
 
+        # creating plane and ellipses
         plane = self.get_function_graph(axes, lambda x, y: c, opacity=0.35, resolution=(10, 10))
         curve = self.get_ellissoid_curve(axes, paraboloid_center, a, b, c)
 
+        # setting up the text before the animation
         eq_problem = TextSequence(["$F(x,y)$", "$F(x,y)=c$", "$F(x,y)-c=0$", "$G(x,y)=0$"])
         eq_problem.target.to_corner(UR, buff=LARGE_BUFF).shift(LEFT)
 
+        # Animating Axes creation, introducing the problem
         self.play(ShowCreation(axes))
         self.play(*map(ShowCreation, surface), eq_problem.next_and_play(), run_time=3)
         self.play(ShowCreation(plane), eq_problem.next_and_play(), run_time=2)
 
         self.next_slide()
-        self.play(ShowCreation(curve), run_time=2)
 
+        # Creation of the curve -> Plane fades out -> all shift down -> update label to $G(x,y)=0$
+        self.play(ShowCreation(curve), run_time=2)
         self.play(FadeOut(plane))
         shift_qty = ORIGIN - axes.c2p(0, 0, c)
-
         self.play(surface.animate.shift(shift_qty), curve.animate.shift(shift_qty), eq_problem.next_and_play())
         self.play(eq_problem.next_and_play())
 
-        self.next_slide() # Zoomming on ellipse
+        self.next_slide()
 
+        # Calculating where/how much do i have to zoom
         camera_center = axes.c2p(xc, yc, 0)
         camera_scaling = 0.4
         total_scaling *= camera_scaling
 
+        # Zoomming on ellipse
         self.play(
             frame.animate.set_euler_angles(phi=0, theta=0).move_to(camera_center),
             FadeOut(surface), run_time=2
         )
 
-
+        # Setting up texts before the animation starts
         hypot_func = TextSequence([r"$x\mapsto y(x)$", "$\exists y(x)$ ? "])
         hypot_func.target.next_to(eq_problem.current_mob, DOWN)
         hypot_func.next().set_color(YELLOW)
@@ -218,16 +224,16 @@ class Intro(CommonToProblemDescription, ThreeDSlide):
 
         self.next_slide()
 
-        # Creating Arc in the neighborhood of (x0,y0)
+        # Creating Arc in the neighborhood of (x0,y0), getting the middlepoint
         ARC_COLOR = self.ARC_COLOR
         alpha_start, alpha_end = (self.alpha_start, self.alpha_end)
         arc = curve.get_subcurve(alpha_start, alpha_end).set_color(ARC_COLOR).set_stroke(width=8)
         arc_middle = curve.point_from_proportion(0.5 * (alpha_end + alpha_start) - 0.01)
         point = Dot(arc_middle, radius=0.05).set_color(ARC_COLOR)
 
+        # Showing the Arc and fading the curve
         self.play(eq_problem.fade_out(), comment.fade_out(), hypot_func.fade_out())
         hypot_func.next().set_color(ARC_COLOR).next_to(self.to_fixed_coord(point.get_center(), camera_center, total_scaling), UR)
-
         comment.next().set_color_by_tex("intorno di $(x_0,y_0)$", ARC_COLOR)
         self.play(curve.animate.set_color(GREY_A))
         self.play(comment.play())
@@ -828,26 +834,6 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
         self.play(Write(tex3), run_time=2)
         self.wait(5)
         self.play(FadeOut(tex3), statement.fade_out())
-
-class Test(Scene):
-    def construct(self):
-        FS = 45
-        RR = r"\mathbb{R}"
-        t_source = rf"Infatti il teorema della funzione implicita per una funzione $F:{RR}^n\times {RR}^2\to{RR}^2$ di classe $C^1$ tale che $F(x_0,y_0)=(0,0)$ richiede che\\[4pt] $\det \partial_y F \neq 0$ \\[4pt] in tal caso $\exists ! y(x) $ tale che $F(x,y(x))=(0,0)$ in un intorno di $(x_0,y_0)$"
-
-        t_target = r"$\det \partial_y F \neq 0$"
-
-        source_mob = TexText(t_source, font_size=FS)
-        target_mob = TexText(t_target, font_size=FS)
-
-        group = VGroup(source_mob, target_mob).arrange(DOWN, buff=1.5)
-
-        self.add(group)
-        source_labels = index_labels(source_mob).set_color(YELLOW).set_backstroke(BLACK, 5)
-        target_labels = index_labels(target_mob).set_color(PINK).set_backstroke(BLACK, 5)
-
-        self.add(source_labels)
-        self.add(target_labels)
 
 class CommonToContractions(CommonToAll):
 
