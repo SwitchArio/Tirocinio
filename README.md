@@ -34,6 +34,7 @@ This project provides a geometric and intuitive walkthrough of the Implicit Func
 **Key Visualizations:**
 * **Introduction to the problem:** Visualizes the equation $F(x, y) = c$ as the intersection of a 3D surface (e.g., a paraboloid) with a plane, identifying the conditions under which a curve can be locally treated as a function. Introduces the formal statement of the theorem
 * **Partial Derivatives & Injectivity:** Illustrates why the condition $\frac{\partial F}{\partial y} \neq 0$ is required. The animation shows how a vanishing derivative leads to a loss of local injectivity, preventing the existence of a unique function $y = f(x)$.
+![loss of local injectivity](./media/example.gif)
 * **Jacobian Determinant & Grid Deformation:** Generalizes the concept to $\mathbb{R}^n$ by showing the Jacobian as a measure of space deformation. A grid animation demonstrates how a zero determinant "collapses" dimensions, making the local inversion of the map impossible.
 * **Contraction Mapping & Newton’s Method:** Animates the constructive part of the theorem. It shows how the iterative Newton process converges to a fixed point and highlights how the choice of the neighborhood (delta/epsilon) is critical for the stability of the solution.
 
