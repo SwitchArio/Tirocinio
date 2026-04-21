@@ -1,4 +1,3 @@
-import manimlib.animation.animation
 from manimlib import *
 from manim_slides.slide import Slide, ThreeDSlide
 
@@ -856,7 +855,7 @@ class WhatsAContraction(CommonToContractions, CommonToProblemDescription, Slide)
                 r"La convergenza del metodo e' garantita\\ solo per $y$ sufficientemente vicini",
                 r"Se provo ad invertire un punto troppo lontano",
                 r"I punti cadono al di fuori del domino dopo poche iterazioni",
-                r"La necessita' che $y$ sia abbastanza vicino serve a garantire\\ che la funzione usata per iterare i punti sull'asse delle $x$\\ sia una \textit{contrazione}, e che quindi converga",
+                r"La necessita' che $y$ sia abbastanza vicina serve a garantire\\ che la funzione usata per iterare i punti sull'asse delle $x$\\ sia una \textit{contrazione}, e che quindi converga",
             ],
             font_size=35
         )
