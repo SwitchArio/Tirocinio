@@ -38,6 +38,7 @@ This project provides a geometric and intuitive walkthrough of the Implicit Func
 <br> <p align="center">
   <img src="./local-analysis-implicit-function-theorem/media/example.gif" width="60%">
 </p>
+<br>
 
 
 * **Jacobian Determinant & Grid Deformation:** Generalizes the concept to $\mathbb{R}^n$ by showing the Jacobian as a measure of space deformation. A grid animation demonstrates how a zero determinant "collapses" dimensions, making the local inversion of the map impossible.
