@@ -168,8 +168,7 @@ class Intro(CommonToProblemDescription, ThreeDSlide):
         plane = self.get_function_graph(axes, lambda x, y: c, opacity=0.35, resolution=(10, 10))
         curve = self.get_ellissoid_curve(axes, paraboloid_center, a, b, c)
 
-        texts = ["$F(x,y)$", "$F(x,y)=c$", "$F(x,y)-c=0$", "$G(x,y)=0$"]
-        eq_problem = TextSequence(texts)
+        eq_problem = TextSequence(["$F(x,y)$", "$F(x,y)=c$", "$F(x,y)-c=0$", "$G(x,y)=0$"])
         eq_problem.target.to_corner(UR, buff=LARGE_BUFF).shift(LEFT)
 
         self.play(ShowCreation(axes))
@@ -604,6 +603,7 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
                 r"e' l'analogo del caso 1 dimensionale",
                 r"In punti come questo le aree vengono collassate in rette o punti",
                 r"In punti come questo le aree vengono collassate in rette o punti\\ ossia l'\textit{operatore} citato prima non e' invertibile",
+
             ], font_size=self.FONT_SIZE,
         )
         comment.next()
@@ -788,8 +788,66 @@ class InvertibilityGeneralization(CommonToDerivative, Slide):
 
         # camera zooms out back to original position
         self.play(frame.animate.restore(), comment.next_and_play())
-        self.wait(7)
+        self.wait(5)
         self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+        statement = TextSequence(
+            [
+                rf"Infatti il teorema della funzione implicita per una funzione $F:{self.RR}^n\times {self.RR}^2\to{self.RR}^2$\\ di classe $C^1$ tale che $F(x_0,y_0)=(0,0)$ richiede che\\[4pt]",
+                rf"Infatti il teorema della funzione implicita per una funzione $F:{self.RR}^n\times {self.RR}^2\to{self.RR}^2$\\ di classe $C^1$ tale che $F(x_0,y_0)=(0,0)$ richiede che\\[4pt] $\det \partial_y F \neq 0$",
+                rf"Infatti il teorema della funzione implicita per una funzione $F:{self.RR}^n\times {self.RR}^2\to{self.RR}^2$\\ di classe $C^1$ tale che $F(x_0,y_0)=(0,0)$ richiede che\\[4pt] $\det \partial_y F \neq 0$ \\[4pt] in tal caso $\exists ! y(x) $ tale che $F(x,y(x))=(0,0)$ in un intorno di $(x_0,y_0)$",
+                r"$\det \partial_y F \neq 0$",
+            ],
+            font_size=self.FONT_SIZE,  t2c={r"\det \partial_y F \neq 0": PINK},
+            transitions=[
+                [(None, 104, None, 104)],
+                [(None, 113, None, 113)],
+                [(104, 113, 0, None)]
+            ]
+        )
+
+        self.play(statement.next_and_play(), run_time=3)
+        self.wait(2.5)
+        self.play(statement.next_and_play())
+        self.wait()
+        self.play(statement.next_and_play()) # statement complete
+        self.wait(5)
+        statement.next()
+        self.play(statement.play())
+        self.wait()
+        statement_copy = statement.get_current().copy()
+
+        tex = TexText(r"$\partial_y F$ e' una matrice", font_size=self.FONT_SIZE, t2c={r"\partial_y F": PINK}).fix_in_frame().next_to(statement.current_mob.get_center(), DOWN+2.5*LEFT, buff=LARGE_BUFF)
+        self.play(TransformMatchingTex(statement_copy, tex, matched_pairs=[(statement_copy[3:6], tex[0:3])]))
+        self.wait()
+        tex2 = TexText(r", corrisponde al Jacobiano $J_f$ che abbiamo appena visto", font_size=self.FONT_SIZE).fix_in_frame().next_to(tex, RIGHT, buff=SMALL_BUFF)
+        tex3 = TexText(r"ossia la condizione corrisponde a $\det J_f \neq 0$\\ dell'esempio precedente", font_size=self.FONT_SIZE).fix_in_frame().next_to(statement.current_mob.get_center(), DOWN, buff=LARGE_BUFF)
+        self.play(Write(tex2), run_time=2)
+        self.wait(3)
+        self.play(FadeOut(tex2), FadeOut(tex))
+        self.play(Write(tex3), run_time=2)
+        self.wait(5)
+        self.play(FadeOut(tex3), statement.fade_out())
+
+class Test(Scene):
+    def construct(self):
+        FS = 45
+        RR = r"\mathbb{R}"
+        t_source = rf"Infatti il teorema della funzione implicita per una funzione $F:{RR}^n\times {RR}^2\to{RR}^2$ di classe $C^1$ tale che $F(x_0,y_0)=(0,0)$ richiede che\\[4pt] $\det \partial_y F \neq 0$ \\[4pt] in tal caso $\exists ! y(x) $ tale che $F(x,y(x))=(0,0)$ in un intorno di $(x_0,y_0)$"
+
+        t_target = r"$\det \partial_y F \neq 0$"
+
+        source_mob = TexText(t_source, font_size=FS)
+        target_mob = TexText(t_target, font_size=FS)
+
+        group = VGroup(source_mob, target_mob).arrange(DOWN, buff=1.5)
+
+        self.add(group)
+        source_labels = index_labels(source_mob).set_color(YELLOW).set_backstroke(BLACK, 5)
+        target_labels = index_labels(target_mob).set_color(PINK).set_backstroke(BLACK, 5)
+
+        self.add(source_labels)
+        self.add(target_labels)
 
 class CommonToContractions(CommonToAll):
 
@@ -1234,22 +1292,24 @@ class TextSequence:
         ----------
         texts : list of str
             A list of LaTeX strings representing the sequence of steps to display.
+
+        font_size : int, optional
+            The font size of the text (default is 30).
+
         transitions : list of list of tuples, optional
             Custom index mappings to force specific substring matches during `TransformMatchingTex`.
             Each sub-list corresponds to a transition between two consecutive steps
             (e.g., `transitions[0]` manages `texts[0] -> texts[1]`).
-
             A mapping tuple can be formatted in two ways:
+
             - 1-to-1 mapping: `(source_index, target_index)`
             - Slice mapping: `(start_source, end_source, start_target, end_target)`
-              (Use `None` to replicate open slice behavior, e.g., `[:5]` becomes `(None, 5)`).
 
-        font_size : int, optional
-            The font size of the text (default is 30).
-        corner : np.ndarray, optional
-            The corner of the screen where the text will be placed initially (default is UR).
-        buff : float, optional
-            The buffer distance from the screen edge (default is LARGE_BUFF).
+            (Use `None` to replicate open slice behavior, e.g., `[:5]` becomes `(None, 5)`).
+
+
+        t2c : dict, optional
+            The color of the text
         """
 
     def __init__(self, texts, font_size=30, transitions=None, t2c = None):
@@ -1359,8 +1419,12 @@ class TextSequence:
         self.current_mob = None
         return fade_animation
 
+    def get_current(self):
+        return self.current_mob.copy()
 
 """ TO RUN THE CODE AS PRESENTATION
 manimgl main.py Intro DerivativeMeaning InvertibleDerivative InvertibilityGeneralization WhatsAContraction -w --hd
 manim-slides convert Intro DerivativeMeaning InvertibleDerivative InvertibilityGeneralization WhatsAContraction Slides.html --open
+manim-slides convert Intro DerivativeMeaning InvertibleDerivative InvertibilityGeneralization WhatsAContraction TeoFunzioneImplicitaArielli.mp4
+ffmpeg -ss 00:00:05 -t 20 -i slides/files/WhatsAContraction/file_name.mp4 -filter_complex "[0:v] fps=30,scale=-1:-1:flags=lanczos,split [a][b];[a] palettegen [p];[b][p] paletteuse" -loop 0 example2.gif
 """
