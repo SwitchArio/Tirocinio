@@ -35,7 +35,9 @@ This project provides a geometric and intuitive walkthrough of the Implicit Func
 * **Introduction to the problem:** Visualizes the equation $F(x, y) = c$ as the intersection of a 3D surface (e.g., a paraboloid) with a plane, identifying the conditions under which a curve can be locally treated as a function. Introduces the formal statement of the theorem
 * **Partial Derivatives & Injectivity:** Illustrates why the condition $\frac{\partial F}{\partial y} \neq 0$ is required. The animation shows how a vanishing derivative leads to a loss of local injectivity, preventing the existence of a unique function $y = f(x)$.
 
-![loss of local injectivity](./local-analysis-implicit-function-theorem/media/example.gif)
+<br> <p align="center">
+  <img src="./local-analysis-implicit-function-theorem/media/example.gif" width="60%">
+</p>
 
 
 * **Jacobian Determinant & Grid Deformation:** Generalizes the concept to $\mathbb{R}^n$ by showing the Jacobian as a measure of space deformation. A grid animation demonstrates how a zero determinant "collapses" dimensions, making the local inversion of the map impossible.
